@@ -1,4 +1,4 @@
-﻿from fivem_mcp.docs import docs_manager
+from fivem_mcp.docs import docs_manager
 from fivem_mcp.server import (
     search_docs,
     get_doc,
@@ -19,9 +19,9 @@ from fivem_mcp.server import (
 def test_docs_manager_all_33_topics():
     topics = docs_manager.list_topics()
     assert len(topics) == 33, f"Expected 33 topics, found {len(topics)}"
-    slugs = [t["topic"] for t in topics]
+    slugs = {t["topic"] for t in topics}
 
-    expected_slugs = [
+    expected_slugs = {
         "fxmanifest",
         "networking-events",
         "state-bags",
@@ -55,9 +55,8 @@ def test_docs_manager_all_33_topics():
         "developers-sandbox",
         "developers-script-runtimes",
         "developers-server-security",
-    ]
-    for expected in expected_slugs:
-        assert expected in slugs, f"Missing topic slug: {expected}"
+    }
+    assert slugs == expected_slugs
 
 
 def test_search_docs_developer_guides():

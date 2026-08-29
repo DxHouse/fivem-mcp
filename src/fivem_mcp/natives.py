@@ -1,11 +1,11 @@
-﻿import bisect
+import bisect
 from functools import lru_cache
 import json
 import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
-import httpx
+import urllib.request
 
 NATIVES_URL = "https://runtime.fivem.net/doc/natives.json"
 DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "natives.json"
@@ -40,10 +40,9 @@ class NativesManager:
         """Download natives.json if missing."""
         if not DATA_FILE.exists():
             DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-            with httpx.Client(follow_redirects=True, timeout=30.0) as client:
-                resp = client.get(NATIVES_URL)
-                resp.raise_for_status()
-                DATA_FILE.write_bytes(resp.content)
+            req = urllib.request.Request(NATIVES_URL, headers={"User-Agent": "FiveM-MCP"})
+            with urllib.request.urlopen(req, timeout=30.0) as resp:
+                DATA_FILE.write_bytes(resp.read())
 
     def load(self) -> None:
         """Load and build inverted index in memory."""
