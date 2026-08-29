@@ -1,66 +1,48 @@
-﻿# FiveM NUI & UI Communication Guide
+﻿---
+title: "FiveM NUI & Web UI Communication Guide"
+description: "Two-way communication between FiveM Lua and Chromium Web UI using SendNUIMessage and RegisterNUICallback."
+keywords: ["nui", "cef", "webview", "html ui", "sendnuimessage", "registernuicallback", "setnuifocus", "callbacks"]
+---
 
-NUI (Native User Interface) renders HTML/CSS/JS web pages inside the FiveM game client.
+# FiveM NUI & Web UI Communication Guide
 
-## Lua to NUI Communication (`SendNUIMessage`)
+NUI (Native User Interface) allows developers to build user interfaces using standard web technologies (HTML, CSS, JavaScript, React, Vue).
 
-Send data packets from client Lua to JavaScript:
+## 1. Quick Reference
 
-```lua
--- Client Lua: Open UI and send data
-SetNuiFocus(true, true) -- enables mouse cursor and keyboard input
-SendNUIMessage({
-    action = 'openMenu',
-    data = {
-        title = 'Inventory',
-        items = { 'bread', 'water', 'bandage' }
-    }
-})
-```
+| Function | Direction | Description |
+| :--- | :--- | :--- |
+| `SendNUIMessage(data)` | Lua -> Web JS | Sends a JSON message envelope to the NUI window |
+| `RegisterNUICallback(name, cb)` | Web JS -> Lua | Receives HTTP POST callback from `fetch()` in JS |
+| `SetNuiFocus(cursor, keyboard)` | Client Lua | Toggles mouse cursor and keyboard focus |
 
-```javascript
-// Web JavaScript (NUI page)
-window.addEventListener('message', (event) => {
-    const item = event.data;
-    if (item.action === 'openMenu') {
-        console.log('Opening menu with items:', item.data.items);
-        document.getElementById('app').style.display = 'block';
-    }
-});
-```
-
-## NUI to Lua Communication (`RegisterNUICallback`)
-
-Send POST requests from JavaScript back to client Lua:
-
-```javascript
-// Web JavaScript: Send callback back to client Lua
-async function postData(endpoint, data = {}) {
-    // URL format: https://<current_resource_name>/<callback_name>
-    const resourceName = GetParentResourceName();
-    const response = await fetch(`https://${resourceName}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    return await response.json();
-}
-
-// Example: closing UI
-postData('closeUI', { status: 'cancelled' });
-```
+## 2. Production Code Examples
 
 ```lua
--- Client Lua: Handle the callback
+-- CLIENT LUA:
 RegisterNUICallback('closeUI', function(data, cb)
-    SetNuiFocus(false, false) -- release focus
-    print('UI closed with reason:', data.status)
-    cb({ ok = true }) -- ALWAYS invoke cb() to finish the HTTP response!
+    SetNuiFocus(false, false)
+    cb({ ok = true }) -- ALWAYS invoke callback!
 end)
 ```
 
-## NUI Checklist & Pitfalls
+```javascript
+// NUI JS:
+window.addEventListener('message', (event) => {
+    if (event.data.action === 'open') {
+        document.body.style.display = 'block';
+    }
+});
 
-1. **Always Call `cb(...)`**: Every `RegisterNUICallback` handler MUST invoke the callback `cb(...)`, otherwise the browser `fetch` promise will hang indefinitely.
-2. **Resource Name In Fetch**: Always use `GetParentResourceName()` in JavaScript to avoid hardcoding resource folder names.
-3. **Keep `ui_page` Updated**: Ensure `ui_page` and all bundled build assets (`.js`, `.css`, images) are declared in `files { ... }` inside `fxmanifest.lua`.
+function closeMenu() {
+    fetch(`https://${GetParentResourceName()}/closeUI`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    });
+}
+```
+
+## 3. Pitfalls & Best Practices
+
+- **Always Invoke `cb()` in `RegisterNUICallback`:** Failing to call `cb()` causes the client Chromium `fetch()` promise to hang indefinitely.

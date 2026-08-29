@@ -1,54 +1,41 @@
-﻿# Using Scaleform (Flash GFx UI) in FiveM
+﻿---
+title: "Using Scaleform (Flash GFx UI) in FiveM"
+description: "Rendering high-performance Scaleform Flash movies, instructional buttons, and HUD elements."
+keywords: ["scaleform", "gfx", "instructional buttons", "flash", "requestscaleformmovie", "minimap", "hud"]
+---
 
-Scaleform GFx is GTA V's native vector interface framework. It powers in-game minimaps, instructional buttons, heists boards, and countdown timers with high performance.
+# Using Scaleform (Flash GFx UI) in FiveM
 
-## Lifecycle of a Scaleform Movie
+Scaleform GFx is GTA V's native vector interface framework powering instructional button bars, countdown timers, and minimap HUDs.
 
-1. **`RequestScaleformMovie(movieName)`**: Requests the GFx movie into GPU memory.
-2. **`HasScaleformMovieLoaded(handle)`**: Waits until loaded.
-3. **`BeginScaleformMovieMethod` / `EndScaleformMovieMethod`**: Calls ActionScript methods on the movie.
-4. **`DrawScaleformMovieFullscreen` / `DrawScaleformMovie_3d`**: Renders on screen or in 3D space.
-5. **`SetScaleformMovieAsNoLongerNeeded`**: Frees GPU memory when finished.
+## 1. Quick Reference
 
-## Example: Instructional Buttons Bar (Bottom Right HUD)
+| Function | Description |
+| :--- | :--- |
+| `RequestScaleformMovie(name)` | Loads GFx movie into GPU memory |
+| `HasScaleformMovieLoaded(handle)` | Checks if movie is ready |
+| `DrawScaleformMovieFullscreen(...)` | Renders movie on screen |
+| `SetScaleformMovieAsNoLongerNeeded(...)` | Frees GPU movie memory |
+
+## 2. Production Code Examples
 
 ```lua
-local scaleform = nil
+local sf = RequestScaleformMovie("instructional_buttons")
+while not HasScaleformMovieLoaded(sf) do Wait(0) end
 
-local function setupInstructionalButtons()
-    local sf = RequestScaleformMovie("instructional_buttons")
-    while not HasScaleformMovieLoaded(sf) do
-        Wait(0)
-    end
+BeginScaleformMovieMethod(sf, "CLEAR_ALL")
+EndScaleformMovieMethod()
 
-    BeginScaleformMovieMethod(sf, "CLEAR_ALL")
-    EndScaleformMovieMethod()
+BeginScaleformMovieMethod(sf, "SET_DATA_SLOT")
+ScaleformMovieMethodAddParamInt(0)
+ScaleformMovieMethodAddParamPlayerNameString(GetControlInstructionalButton(2, 38, true))
+ScaleformMovieMethodAddParamTextureNameString("Interact")
+EndScaleformMovieMethod()
 
-    -- Button 1: [E] Interact (~INPUT_CONTEXT~)
-    BeginScaleformMovieMethod(sf, "SET_DATA_SLOT")
-    ScaleformMovieMethodAddParamInt(0)
-    ScaleformMovieMethodAddParamPlayerNameString(GetControlInstructionalButton(2, 38, true))
-    ScaleformMovieMethodAddParamTextureNameString("Interact")
-    EndScaleformMovieMethod()
-
-    -- Button 2: [BACKSPACE] Cancel (~INPUT_CELLPHONE_CANCEL~)
-    BeginScaleformMovieMethod(sf, "SET_DATA_SLOT")
-    ScaleformMovieMethodAddParamInt(1)
-    ScaleformMovieMethodAddParamPlayerNameString(GetControlInstructionalButton(2, 177, true))
-    ScaleformMovieMethodAddParamTextureNameString("Cancel")
-    EndScaleformMovieMethod()
-
-    BeginScaleformMovieMethod(sf, "DRAW_INSTRUCTIONAL_BUTTONS")
-    EndScaleformMovieMethod()
-
-    return sf
-end
-
-CreateThread(function()
-    scaleform = setupInstructionalButtons()
-    while scaleform do
-        DrawScaleformMovieFullscreen(scaleform, 255, 255, 255, 255, 0)
-        Wait(0)
-    end
-end)
+BeginScaleformMovieMethod(sf, "DRAW_INSTRUCTIONAL_BUTTONS")
+EndScaleformMovieMethod()
 ```
+
+## 3. Pitfalls & Best Practices
+
+- **Always Free Scaleform Handles:** Call `SetScaleformMovieAsNoLongerNeeded` when closing UI elements.

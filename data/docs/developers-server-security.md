@@ -1,63 +1,47 @@
-﻿# Secure Your Events: FiveM Server Security Architecture
+﻿---
+title: "Secure Your Events: FiveM Server Security Architecture"
+description: "Authoritative server validation, trust boundaries, source verification, rate limiting, and exploit defense."
+keywords: ["server security", "security", "source", "rate limiting", "distance check", "anticheat", "exploits", "trust boundary"]
+---
+
+# Secure Your Events: FiveM Server Security Architecture
 
 In FiveM, the client runtime is untrusted. Malicious players can use Lua executors to invoke any `RegisterNetEvent` with arbitrary arguments. All authoritative logic, money awards, and item grants MUST be validated on the server.
 
-## Core Security Rules
+## 1. Quick Reference & Core Rules
 
-### 1. Always Capture `source` Locally
-Never trust a client-supplied player ID. Always use the implicit `source` global captured as a local variable inside the event handler:
+| Rule | Vulnerability Prevented | Implementation |
+| :--- | :--- | :--- |
+| **Source Isolation** | Identity spoofing | Capture `local src = source` immediately |
+| **Distance Verification** | Remote teleport triggers | Compare `GetEntityCoords(GetPlayerPed(src))` with location |
+| **Rate Limiting** | Event spamming / item duping | Per-player cooldown tracker with `GetGameTimer()` |
 
-```lua
--- SECURE:
-RegisterNetEvent('bank:deposit', function(amount)
-    local src = source -- Capture immediately!
-    -- Authoritative server logic using src
-end)
-
--- VULNERABLE (DO NOT DO THIS):
-RegisterNetEvent('bank:deposit', function(playerId, amount)
-    -- Modder can pass another player's ID!
-end)
-```
-
-### 2. Distance Verification for World Actions
-Before awarding items or money from a robbery or shop, verify that the player ped is physically near the shop coordinates:
-
-```lua
-local shopCoords = vector3(25.0, -1345.0, 29.5)
-local maxDistance = 5.0
-
-RegisterNetEvent('shop:purchaseItem', function(itemId)
-    local src = source
-    local ped = GetPlayerPed(src)
-    local playerCoords = GetEntityCoords(ped)
-
-    if #(playerCoords - shopCoords) > maxDistance then
-        print(string.format("[SECURITY ALERT] Player %s triggered purchase from too far away!", src))
-        DropPlayer(src, "Exploit attempt: Distance check failed.")
-        return
-    end
-
-    -- Process purchase
-end)
-```
-
-### 3. Per-Player Cooldowns & Rate Limiting
-Prevent spamming event triggers to duplicate items:
+## 2. Production Code Examples
 
 ```lua
 local playerCooldowns = {}
+local shopCoords = vector3(25.0, -1345.0, 29.5)
 
-RegisterNetEvent('mining:harvestRock', function()
+RegisterNetEvent('shop:purchaseItem', function(itemId)
     local src = source
     local now = GetGameTimer()
-    local lastAction = playerCooldowns[src] or 0
-
-    if (now - lastAction) < 3000 then -- 3 second cooldown
-        return -- Ignore spam
-    end
+    
+    -- 1. Rate Limiting Check (2-second cooldown)
+    if (now - (playerCooldowns[src] or 0)) < 2000 then return end
     playerCooldowns[src] = now
 
-    -- Award mining rock
+    -- 2. Distance Verification (max 5.0 meters)
+    local ped = GetPlayerPed(src)
+    local coords = GetEntityCoords(ped)
+    if #(coords - shopCoords) > 5.0 then
+        DropPlayer(src, "Exploit detected: Distance check failed.")
+        return
+    end
+
+    -- 3. Authoritative server transaction
 end)
 ```
+
+## 3. Pitfalls & Best Practices
+
+- **Never Trust Client Arguments for Price or Quantity:** Always fetch item prices and player account balances directly on the server.

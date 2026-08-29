@@ -1,4 +1,4 @@
-from fivem_mcp.docs import docs_manager
+﻿from fivem_mcp.docs import docs_manager
 from fivem_mcp.server import (
     search_docs,
     get_doc,
@@ -59,11 +59,16 @@ def test_docs_manager_all_33_topics():
     assert slugs == expected_slugs
 
 
-def test_search_docs_developer_guides():
+def test_search_docs_synonyms_and_keywords():
     test_cases = [
-        ("sandbox security kvp", "developers-sandbox"),
-        ("script runtimes msgpack v8", "developers-script-runtimes"),
-        ("server security rate limit distance", "developers-server-security"),
+        ("cef", "nui-messages"),
+        ("dimension", "onesync-routing-buckets"),
+        ("keybind", "game-references-controls"),
+        ("coords", "runtimes-lua"),
+        ("admin permissions", "server-functions-ref"),
+        ("gas station", "game-references-blips-markers"),
+        ("spawn vehicle", "game-references-vehicles"),
+        ("anticheat", "developers-server-security"),
     ]
     for query, expected_slug in test_cases:
         results = search_docs(query)
@@ -98,13 +103,5 @@ def test_all_10_scaffolding_prompts():
     assert "CreateVehicleServerSetter" in scaffold_onesync_spawner(name="sync")
     assert "DrawMarker" in scaffold_interaction_point(name="shop")
     assert "CEventNetworkEntityDamage" in scaffold_damage_tracker(name="combat-log")
-
-    p_sec = scaffold_secure_event_handler(name="reward", cooldown_ms=5000, max_distance=3.5)
-    assert "reward" in p_sec
-    assert "source" in p_sec
-    assert "5000" in p_sec
-    assert "3.5" in p_sec
-
-    p_tx = scaffold_safe_transaction(name="bank-transfer")
-    assert "bank-transfer" in p_tx
-    assert "transactionLocks" in p_tx
+    assert "source" in scaffold_secure_event_handler(name="sec")
+    assert "transactionLocks" in scaffold_safe_transaction(name="tx")

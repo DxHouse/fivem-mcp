@@ -1,14 +1,19 @@
-﻿# Scripting in C# (.NET Runtime)
+﻿---
+title: "Scripting in C# (.NET Runtime)"
+description: "C# scripting in FiveM with CitizenFX.Core, BaseScript, async tasks, event handlers, and .csproj setup."
+keywords: ["csharp", "c#", "dotnet", "netstandard", "basescript", "eventhandler", "tick", "citizenfx.core"]
+---
 
-FiveM supports C# using .NET Standard with the `CitizenFX.Core.Client` and `CitizenFX.Core.Server` libraries.
+# Scripting in C# (.NET Runtime)
 
-## Project Configuration (`.csproj`)
+FiveM supports C# using .NET Standard 2.0 with the `CitizenFX.Core.Client` and `CitizenFX.Core.Server` NuGet packages.
+
+## 1. Quick Reference & Setup
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <DebugType>portable</DebugType>
     <TargetName>MyResource.Client.net</TargetName>
   </PropertyGroup>
   <ItemGroup>
@@ -17,15 +22,12 @@ FiveM supports C# using .NET Standard with the `CitizenFX.Core.Client` and `Citi
 </Project>
 ```
 
-In `fxmanifest.lua`, specify compiled `.net.dll` files:
+In `fxmanifest.lua`:
 ```lua
 client_script 'bin/Release/netstandard2.0/MyResource.Client.net.dll'
-server_script 'bin/Release/netstandard2.0/MyResource.Server.net.dll'
 ```
 
-## Creating a Script (`BaseScript`)
-
-All script logic extends `BaseScript`:
+## 2. Production Code Examples
 
 ```csharp
 using System;
@@ -39,32 +41,24 @@ namespace MyResource.Client
     {
         public ClientMain()
         {
-            // Register event handlers
             EventHandlers["myResource:notify"] += new Action<string>(OnNotify);
-            
-            // Register tick handler
             Tick += OnTick;
         }
 
         private void OnNotify(string message)
         {
-            Debug.WriteLine($"Notification: {message}");
+            Debug.WriteLine($"[NOTIFY]: {message}");
         }
 
         private async Task OnTick()
         {
-            await Delay(1000); // Non-blocking delay
-            
-            Vector3 playerPos = Game.PlayerPed.Position;
-            // logic
-        }
-
-        [Command("getpos")]
-        private void GetPosCommand()
-        {
+            await Delay(1000); // 1-second non-blocking delay
             Vector3 pos = Game.PlayerPed.Position;
-            TriggerEvent("chat:addMessage", new { args = new[] { $"Position: {pos}" } });
         }
     }
 }
 ```
+
+## 3. Pitfalls & Best Practices
+
+- **Avoid Heavy Async Allocations in Tick Loops:** Reusing delegates and avoiding frequent LINQ inside `Tick` handlers prevents GC stutter.

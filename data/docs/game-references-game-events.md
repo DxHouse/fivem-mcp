@@ -1,17 +1,21 @@
-﻿# Low-Level Game Events (`gameEventTriggered`) Reference
+﻿---
+title: "Low-Level Game Events (gameEventTriggered) Reference"
+description: "Intercepting native GTA V C++ engine events for damage, death, and vehicle destruction via gameEventTriggered."
+keywords: ["game events", "gameeventtriggered", "ceventnetworkentitydamage", "ceventnetworkplayerdeath", "damage", "combat", "kills"]
+---
+
+# Low-Level Game Events (`gameEventTriggered`) Reference
 
 `gameEventTriggered` intercepts native GTA V C++ engine events dispatched whenever entities take damage, vehicles are destroyed, or players die.
 
-## `gameEventTriggered` Event List
+## 1. Quick Reference & Event Schema
 
 | Event Name | Dispatched When | Args Array Schema |
 | :--- | :--- | :--- |
 | `CEventNetworkEntityDamage` | Entity takes damage | `args[1]` = victim handle<br>`args[2]` = attacker handle<br>`args[6]` = fatal flag (1/0)<br>`args[7]` = weapon hash |
 | `CEventNetworkPlayerDeath` | Networked player dies | `args[1]` = victim player ped<br>`args[2]` = killer entity |
-| `CEventNetworkVehicleUndrivable` | Vehicle becomes wrecked | `args[1]` = vehicle handle |
-| `CEventNetworkPlayerCollectedPickup` | Player collects pickup | `args[1]` = player ped<br>`args[2]` = pickup hash |
 
-## Complete Damage & Kill Tracking Implementation
+## 2. Production Code Examples
 
 ```lua
 AddEventHandler('gameEventTriggered', function(name, args)
@@ -21,21 +25,13 @@ AddEventHandler('gameEventTriggered', function(name, args)
         local isFatal = args[6] == 1
         local weaponHash = args[7]
 
-        -- Filter: Only track damage to local player
         if victim == PlayerPedId() then
-            local attackerName = "Unknown"
-            if IsEntityAPed(attacker) and IsPedAPlayer(attacker) then
-                local attackerPlayer = NetworkGetPlayerIndexFromPed(attacker)
-                attackerName = GetPlayerName(attackerPlayer)
-            end
-
-            if isFatal then
-                print(string.format("Killed by: %s (Weapon: 0x%X)", attackerName, weaponHash))
-                TriggerServerEvent('death:playerDied', attackerName, weaponHash)
-            else
-                print(string.format("Damaged by: %s (Weapon: 0x%X)", attackerName, weaponHash))
-            end
+            print(string.format("Damage from attacker %s (Weapon: 0x%X, Fatal: %s)", attacker, weaponHash, isFatal))
         end
     end
 end)
 ```
+
+## 3. Pitfalls & Best Practices
+
+- **Filter by Local Ped:** `gameEventTriggered` fires for ambient NPC damage as well; always check `victim == PlayerPedId()` if you only care about local player events.

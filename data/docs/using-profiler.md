@@ -1,38 +1,29 @@
-﻿# Using the FiveM Profiler
+﻿---
+title: "Using the FiveM Profiler"
+description: "Frame-by-frame execution profiling, resmon 1 tick analysis, Chrome tracing, and Speedscope optimization."
+keywords: ["profiler", "resmon", "performance", "speedscope", "chrome tracing", "lag", "tick", "cpu time"]
+---
 
-The FiveM Profiler captures frame-by-frame execution times and resource ticks to identify script lag, micro-stutters, and high CPU usage.
+# Using the FiveM Profiler
 
-## Basic vs Advanced Performance Monitoring
+The FiveM Profiler captures frame-by-frame execution times and resource ticks to identify script lag, micro-stutters, and CPU spikes.
 
-1. **Resource Monitor (`resmon 1` in client console / F8):**
-   - Shows CPU time (ms) and memory footprint (MB) per resource in real-time.
-   - Ideal baseline: **0.00 ms - 0.04 ms** for idle resources.
-   - Any resource exceeding **0.20 ms** continuously should be investigated.
+## 1. Quick Reference & Commands
 
-2. **FiveM Profiler (Frame-Level Tracing):**
-   - Records detailed call graphs and function execution durations across all frames.
+| Command | Environment | Description |
+| :--- | :--- | :--- |
+| `resmon 1` | Client F8 Console | Real-time resource CPU (ms) and memory monitor |
+| `profiler record 500` | F8 / Server Console | Record detailed trace for 500 frames |
+| `profiler view` | In-Game UI | Open interactive profile viewer |
+| `profiler save trace.json` | F8 Console | Export JSON trace file for Speedscope / Chrome |
 
-## Recording a Profile Trace
+## 2. Production Workflow
 
-Run commands in the client F8 console or server console:
+1. Execute `profiler record 500` during gameplay or server stress.
+2. Execute `profiler save my_trace.json`.
+3. Open [speedscope.app](https://www.speedscope.app/) and drop `my_trace.json`.
+4. Switch to **Left Heavy** view to identify hot functions consuming high aggregate CPU time.
 
-```text
-# 1. Start recording (will record 500 frames)
-profiler record 500
+## 3. Pitfalls & Best Practices
 
-# 2. View results in the in-game UI
-profiler view
-
-# 3. Or save to disk for Chrome Tracing analysis
-profiler save my_trace.json
-```
-
-## Analyzing Traces with Speedscope or Chrome Tracing
-
-1. Open [speedscope.app](https://www.speedscope.app/) or navigate to `chrome://tracing` in Google Chrome.
-2. Drag and drop the saved `my_trace.json` file.
-3. Switch to **Time Order** or **Left Heavy** view.
-4. Look for:
-   - Long tick blocks (`Citizen::CreateThread` taking > 1.0 ms).
-   - Expensive native calls executed inside loops without sleeping (e.g. repeated `GetEntityCoords` or `DrawMarker`).
-   - Deep nested table iterations.
+- **Target CPU Budget:** Idle client resources should consume **0.00 ms - 0.04 ms**. Active interaction points should rarely exceed **0.15 ms**.

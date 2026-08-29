@@ -1,40 +1,31 @@
-﻿# Work with Components and Props Using Collections
+﻿---
+title: "Components and Props Using Collections"
+description: "Managing character customization, clothing DLC packs, and attached props using collection hashes."
+keywords: ["collections", "clothing", "props", "drawables", "mpheist4", "mpsecurity", "setpedcomponentvariationbycollection"]
+---
 
-In modern GTA V / FiveM builds (e.g. mpheist4, mpsecurity, mptuner), drawable ped variations and attached props are organized into **Collections** rather than raw legacy component IDs.
+# Components and Props Using Collections
 
-## Why Collections?
+In modern GTA V builds, drawable variations and attached props are addressed via explicit **Collections** to avoid legacy integer ID limits.
 
-Legacy natives like `SetPedComponentVariation` have integer limit ceilings when servers add hundreds of custom DLC clothing packs. Collection-based natives allow addressing components by their explicit collection hash.
+## 1. Quick Reference
 
-## Collection Natives
+| Function | Description |
+| :--- | :--- |
+| `SetPedComponentVariationByCollection(...)` | Sets drawable clothing piece by collection hash |
+| `SetPedPropIndexByCollection(...)` | Sets attached prop (hat, glasses) by collection hash |
+| `DoesCollectionExist(hash)` | Validates collection existence in memory |
 
-### Setting Ped Components by Collection
+## 2. Production Code Examples
+
 ```lua
 local ped = PlayerPedId()
-local componentId = 4 -- Legs / Pants
+local componentId = 4 -- Pants
 local collectionHash = `mp_m_freemode_01_mp_m_security`
 local drawableHash = `mp_m_freemode_01_mp_m_security_p04`
-local textureIndex = 0
-
--- Modern collection setter
-SetPedComponentVariationByCollection(ped, componentId, collectionHash, drawableHash, textureIndex)
+SetPedComponentVariationByCollection(ped, componentId, collectionHash, drawableHash, 0)
 ```
 
-### Attached Props by Collection (Hats, Glasses, Helmets)
-```lua
-local propIndex = 0 -- Hat / Helmet
-local propCollection = `mp_m_freemode_01_mp_m_security_props`
-local propDrawable = `prop_helmet_01`
+## 3. Pitfalls & Best Practices
 
-SetPedPropIndexByCollection(ped, propIndex, propCollection, propDrawable, 0)
-```
-
-## Validating Collections
-
-```lua
--- Check if a collection is valid and loaded in memory
-local isValid = DoesCollectionExist(collectionHash)
-if isValid then
-    print("Collection is available!")
-end
-```
+- **Validate DLC Packs:** Always check `DoesCollectionExist(collectionHash)` before setting clothing to prevent invisible character models.

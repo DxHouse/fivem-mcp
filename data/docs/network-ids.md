@@ -1,29 +1,31 @@
-﻿# Network and Local IDs in FiveM
+﻿---
+title: "Network and Local IDs in FiveM"
+description: "Converting between local entity handles and synchronized OneSync Network IDs across client and server."
+keywords: ["network id", "netid", "local handle", "entity handle", "onesync", "networkgetnetworkidfromentity", "networkgetentityfromnetworkid"]
+---
 
-In FiveM, entity identification differs between client machines and the server.
+# Network and Local IDs in FiveM
 
-## Local Handle vs Network ID
+In FiveM, entity identification differs between client machines and the authoritative server.
 
-- **Local Entity Handle (`entity`)**: An integer assigned locally by GTA V's game engine on a specific machine. Local handles are NOT valid across machines (Ped #12 on Client A might be Ped #45 on Client B).
-- **Network ID (`netId`)**: A synchronized integer assigned by FiveM/OneSync representing the entity globally across all clients and the server.
+## 1. Quick Reference
 
-## Converting Between Handles and Network IDs
+| Identifier Type | Scope | Example | Description |
+| :--- | :--- | :--- | :--- |
+| **Local Handle** | Client or Server Local | `12`, `485` | Memory handle local to a single GTA V machine |
+| **Network ID (`netId`)**| Synchronized Globally | `1004`, `25601` | Global synchronized identifier managed by OneSync |
+
+## 2. Production Code Examples
 
 ```lua
--- ===================================
--- CLIENT SIDE: Handle -> Network ID
--- ===================================
+-- CLIENT SIDE: Convert Local Handle -> NetID
 local localVehicle = GetVehiclePedIsIn(PlayerPedId(), false)
 if DoesEntityExist(localVehicle) then
     local netId = NetworkGetNetworkIdFromEntity(localVehicle)
-    
-    -- Send netId to server
     TriggerServerEvent('garage:storeVehicle', netId)
 end
 
--- ===================================
--- SERVER SIDE: Network ID -> Handle
--- ===================================
+-- SERVER SIDE: Convert NetID -> Server Entity Handle
 RegisterNetEvent('garage:storeVehicle', function(netId)
     local serverVehicle = NetworkGetEntityFromNetworkId(netId)
     if DoesEntityExist(serverVehicle) then
@@ -32,12 +34,6 @@ RegisterNetEvent('garage:storeVehicle', function(netId)
 end)
 ```
 
-## OneSync & Entity Routing
+## 3. Pitfalls & Best Practices
 
-1. **Server-Side Entity Spawning:**
-   - Always spawn persistent networked vehicles and peds on the **server** using `CreateVehicleServerSetter` or `CreatePed`.
-2. **Entity Existence Checks:**
-   - Always check `DoesEntityExist(entity)` before reading coords, state, or deleting entities.
-3. **Network Owner Migration:**
-   - Network ownership dynamically migrates to whichever client is closest to the entity.
-   - Use `NetworkGetEntityOwner(entity)` to see which client currently controls entity physics.
+- **Never Send Local Handles Over Network:** Local handles are meaningless across machines. Always convert to `netId` before triggering client/server events.

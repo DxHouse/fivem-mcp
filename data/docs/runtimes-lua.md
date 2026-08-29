@@ -1,51 +1,49 @@
-﻿# Scripting in Lua (Lua 5.4 Runtime)
+﻿---
+title: "Scripting in Lua (Lua 5.4 Runtime)"
+description: "FiveM modern Lua 5.4 runtime, native vector arithmetic, thread scheduling, and scoped environments."
+keywords: ["lua", "lua54", "vectors", "vector3", "vector2", "vector4", "createthread", "wait", "exports", "coords"]
+---
 
-FiveM supports modern Lua 5.4 with native vector math, integers, bitwise operators, and scoped resource environments.
+# Scripting in Lua (Lua 5.4 Runtime)
 
-## Lua 5.4 Features in FiveM
+FiveM supports modern Lua 5.4 with native vector math, 64-bit integers, bitwise operators, and isolated resource environments.
 
-Always enable Lua 5.4 in `fxmanifest.lua`:
+## 1. Quick Reference
+
+| Feature | Syntax / Directive | Notes |
+| :--- | :--- | :--- |
+| **Enable Lua 5.4** | `lua54 'yes'` in `fxmanifest.lua` | Recommended for all modern resources |
+| **Vector Types** | `vector2(x, y)`, `vector3(x, y, z)`, `vector4(x, y, z, w)` | Embedded C types with length operator `#` |
+| **Coroutines** | `CreateThread(function() ... end)` | Non-blocking cooperative scheduler |
+| **Yielding** | `Wait(ms)` | Pauses coroutine without blocking game frame |
+
+## 2. Production Code Examples
+
+### Vector Math & Distance Calculation
 ```lua
-lua54 'yes'
-```
-
-### 1. Vector Types (`vector2`, `vector3`, `vector4`)
-FiveM embeds native C vector types directly into the Lua runtime:
-
-```lua
-local posA = vector3(100.0, -200.0, 30.0)
-local posB = GetEntityCoords(PlayerPedId())
+local spawnPos = vector3(100.0, -200.0, 30.0)
+local playerPos = GetEntityCoords(PlayerPedId())
 
 -- Distance calculation using length operator (#)
-local distance = #(posA - posB)
+local distance = #(spawnPos - playerPos)
 
--- Vector arithmetic
-local spawnPos = posA + vector3(0.0, 0.0, 1.0)
+if distance < 5.0 then
+    print("Player is within 5 meters of spawn.")
+end
 ```
 
-### 2. Thread Scheduling (`Citizen.CreateThread` / `CreateThread`)
-Threads in FiveM are cooperative coroutines managed by the game scheduler:
-
+### Resource Exports
 ```lua
-CreateThread(function()
-    while true do
-        Wait(500) -- Pauses coroutine execution without blocking the main game frame
-        -- background task logic
-    end
-end)
-```
-
-### 3. Global & Resource Scoping
-- Each resource executes inside its own isolated `_G` global table.
-- Scripts in the same resource share globals.
-- Cross-resource communication is done via **Exports** or **Events**:
-
-```lua
--- Resource A: Export a function
-exports('calculateTax', function(amount)
-    return amount * 0.07
+-- Resource A (Defines export):
+exports('calculatePrice', function(base, tax)
+    return base * (1 + tax)
 end)
 
--- Resource B: Call the exported function
-local tax = exports['resource-a']:calculateTax(500)
+-- Resource B (Calls export):
+local total = exports['resource-a']:calculatePrice(100, 0.07)
 ```
+
+## 3. Pitfalls & Best Practices
+
+- **Avoid Global Pollution:** Always declare variables with `local` to prevent leaking state across resource scripts.
+- **Dynamic Thread Sleep:** Never use `while true do Wait(0)` when player is far away from an interaction point; sleep for `500` or `1000` ms dynamically.

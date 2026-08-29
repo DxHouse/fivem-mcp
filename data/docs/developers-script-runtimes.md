@@ -1,21 +1,29 @@
-﻿# Script Runtimes Architecture & Serialization Overhead
+﻿---
+title: "Script Runtimes Architecture & Serialization Overhead"
+description: "Internal architecture of Lua 5.4, V8 JavaScript, and C# Mono, memory models, and msgpack export serialization."
+keywords: ["script runtimes", "runtimes", "msgpack", "v8", "mono", "exports", "serialization", "cross-language"]
+---
+
+# Script Runtimes Architecture & Serialization Overhead
 
 FiveM natively hosts three distinct scripting runtimes: Lua 5.4, JavaScript / TypeScript (V8), and C# (.NET/Mono).
 
-## Runtime Comparison Matrix
+## 1. Quick Reference & Engine Matrix
 
-| Runtime | Engine | Strengths | Ideal Use Case |
+| Runtime | Engine | Strengths | Use Case |
 | :--- | :--- | :--- | :--- |
-| **Lua 5.4** | Custom C/C++ VM | Zero memory overhead, fastest native calls, instant reload | Core gameplay loops, HUD, entity control (~90% of resources) |
-| **JavaScript / TS** | V8 (Node.js backend) | Rich NPM ecosystem, asynchronous event handling, TypeScript | Database drivers, WebSockets, Discord bots, JSON processing |
-| **C# (.NET)** | Mono / .NET Standard 2.0 | Strong typing, OOP architecture, high math performance | Complex vehicle mechanics, physics engines, enterprise frameworks |
+| **Lua 5.4** | Custom C/C++ VM | Lowest memory footprint, fastest native calls | Gameplay loops, HUD, entity control |
+| **JavaScript / TS** | V8 (Node.js backend) | Rich NPM ecosystem, async promises, WebSockets | Database drivers, Discord bots, JSON |
+| **C# (.NET)** | Mono / .NET Standard 2.0 | Strong typing, OOP architecture, high math performance | Complex vehicle physics, enterprise frameworks |
 
-## Cross-Runtime Serialization (`msgpack`)
+## 2. Production Performance Insights
 
-When invoking `exports` or triggering events across different runtimes (e.g. Lua calling a C# export or JavaScript triggering a Lua event):
-1. Parameters must be serialized into **MessagePack (`msgpack`)** binary format.
-2. The receiving runtime deserializes the binary payload into its internal object representation.
+```lua
+-- Cross-runtime export calls serialize through MessagePack (msgpack):
+-- Calling an export in another runtime inside a Wait(0) loop costs 5-20x more than a local call.
+-- Best practice: Cache the export value outside the hot tick loop!
+```
 
-### Performance Tip: Minimize Cross-Language Exports in Tight Loops
-- In a `Wait(0)` frame tick loop, calling an export in a different language costs **5x to 20x** more CPU time than calling a local function within the same runtime due to msgpack serialization.
-- Cache export results locally or keep hot tick math inside a single runtime.
+## 3. Pitfalls & Best Practices
+
+- **Avoid Cross-Language Export Spam in Tick Loops:** Cache results or keep frame-tick logic within a single language.

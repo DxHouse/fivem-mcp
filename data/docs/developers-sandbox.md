@@ -1,27 +1,29 @@
-﻿# FiveM Scripting Security Sandbox
+﻿---
+title: "FiveM Scripting Security Sandbox"
+description: "Client and server execution sandboxes, filesystem restrictions, blocked OS libraries, and safe Resource KVP."
+keywords: ["sandbox", "security", "kvp", "resource kvp", "filesystem", "isolation", "os.execute", "io.open"]
+---
+
+# FiveM Scripting Security Sandbox
 
 FiveM employs an isolated sandbox model to prevent malicious server resources from compromising player machines or unauthorized client scripts from modifying local operating system files.
 
-## Client Sandbox Restrictions
+## 1. Quick Reference
 
-On the client runtime:
-1. **Forbidden Standard Libraries**:
-   - `os.execute`, `os.remove`, `os.rename`, and `io.open` are stripped or restricted in Lua.
-   - Raw file system access outside the resource package is completely blocked.
-   - Arbitrary DLL loading (`package.loadlib`) is blocked.
-2. **Safe Key-Value Storage (KVP)**:
-   - To persist data on the client locally without filesystem access, use **Resource KVP** natives:
-     - `SetResourceKvp(key, value)`
-     - `GetResourceKvpString(key)`
-     - `GetResourceKvpInt(key)`
-     - `DeleteResourceKvp(key)`
+| Runtime | Restricted Libraries | Safe Storage Alternatives |
+| :--- | :--- | :--- |
+| **Client** | `os.execute`, `os.remove`, `io.open`, `package.loadlib` | `SetResourceKvp`, `GetResourceKvpString` |
+| **Server** | Direct OS execution without ACE permissions | `SaveResourceFile`, `LoadResourceFile` |
 
-## Server Sandbox & Permissions
+## 2. Production Code Examples
 
-On FXServer:
-1. **Filesystem Isolation**:
-   - Server scripts have full access to `SaveResourceFile(resource, path, data, length)` and `LoadResourceFile(resource, path)` within the server directory hierarchy.
-   - Node.js runtime on server has full access to `fs` module, but paths should be sanitized to avoid directory traversal.
-2. **ACE Security Model**:
-   - Access Control Entries protect administrative natives (e.g. `ExecuteCommand`, `DropPlayer`).
-   - Server console commands registered with `RegisterCommand(name, cb, true)` require explicit ACE permission grants in `server.cfg`.
+```lua
+-- Safe Client Persistent Storage (KVP)
+SetResourceKvp("settings_volume", "85")
+local savedVol = GetResourceKvpInt("settings_volume")
+print("Saved volume setting:", savedVol)
+```
+
+## 3. Pitfalls & Best Practices
+
+- **Never Attempt Raw File I/O on Client:** Use KVP or send data to server for persistent database storage.

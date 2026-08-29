@@ -1,52 +1,32 @@
-﻿# FiveM ConVars (Console Variables) Guide
+﻿---
+title: "FiveM ConVars (Console Variables) Guide"
+description: "Configuring FXServer with ConVars, replication flags (setr), server info (sets), and server.cfg integration."
+keywords: ["convars", "setr", "sets", "getconvar", "setconvar", "server.cfg", "convar_replicated"]
+---
+
+# FiveM ConVars (Console Variables) Guide
 
 ConVars (Console Variables) configure FXServer settings, store global script options, and replicate server variables to clients.
 
-## ConVar Directives in `server.cfg`
+## 1. Quick Reference & Directives
 
-In `server.cfg`, convars are defined using standard flags:
+| Directive / Flag | Scope | Description |
+| :--- | :--- | :--- |
+| `set <name> <val>` | Server-only | Standard internal server convar |
+| `setr <name> <val>` | Replicated | Replicated automatically to all client instances |
+| `sets <name> <val>` | Server List Info | Displayed publicly in FiveM Server List |
 
-```text
-# 1. Standard Server Convar (Server-side only)
-set mysql_connection_string "mysql://root:password@localhost/fivem"
+## 2. Production Code Examples
 
-# 2. Replicated Convar (Sent to all connected clients)
-setr voice_use3dAudio "true"
-setr my_server_mode "roleplay"
-
-# 3. Server Info Convar (Visible in FiveM Server List browser)
-sets Discord "https://discord.gg/mycommunity"
-sets tags "roleplay, custom, cars"
-```
-
-## Reading ConVars in Scripts
-
-### Server-Side Lua / C#
 ```lua
--- Read string convar with fallback default value
+-- SERVER SIDE: Reading and writing convars
 local dbUrl = GetConvar("mysql_connection_string", "default_db_url")
+SetConvarReplicated("voice_use3dAudio", "true")
 
--- Read integer convar
-local maxPlayers = GetConvarInt("sv_maxclients", 32)
-```
-
-### Client-Side Lua (Replicated ConVars)
-Clients can read any convar defined with `setr` in `server.cfg` or declared via `convar_replicated` in `fxmanifest.lua`:
-
-```lua
+-- CLIENT SIDE: Reading replicated convar
 local is3dAudio = GetConvar("voice_use3dAudio", "false")
-local serverMode = GetConvar("my_server_mode", "freeroam")
 ```
 
-## Writing and Modifying ConVars at Runtime
+## 3. Pitfalls & Best Practices
 
-```lua
--- Modify convar on the server
-SetConvar("my_custom_setting", "new_value")
-
--- Set and replicate to all clients
-SetConvarReplicated("my_replicated_setting", "synced_value")
-
--- Set server info tag
-SetConvarServerInfo("Website", "https://myserver.com")
-```
+- **Never put credentials in `setr`:** `setr` values are sent to all connected players; database passwords must strictly use `set`.

@@ -1,60 +1,45 @@
-﻿# FiveM Script Performance & Optimization Guide
+﻿---
+title: "FiveM Performance Best Practices"
+description: "Optimization techniques for Lua loops, thread sleeping, vector math caching, and resource cleanup."
+keywords: ["performance", "optimization", "wait", "cpu time", "resmon", "profiling", "vector math", "cleanup"]
+---
 
-FiveM scripts run continuously in the game loop. Unoptimized scripts cause frame drops (low client FPS) and server lag (hiccups in tick rate).
+# FiveM Performance Best Practices
 
-## Thread Management & Tick Rates
+Maintaining high server tick rates and smooth 60+ client FPS requires efficient thread intervals and minimal tick loop overhead.
 
-### ❌ Anti-Pattern: Tight Loops (`Wait(0)` without distance checks)
+## 1. Quick Reference
+
+| Technique | Anti-Pattern | Best Practice |
+| :--- | :--- | :--- |
+| **Thread Sleep** | `while true do Wait(0)` everywhere | Dynamic wait: `Wait(1000)` when far away, `Wait(0)` when close |
+| **Distance Math** | `GetDistanceBetweenCoords(x1,y1,z1,x2,y2,z2,true)` | Length operator: `#(posA - posB)` |
+| **Entity Lookup** | Repeated `GetPlayerPed(-1)` in loop | Cache `PlayerPedId()` once per tick |
+| **Resource Stop** | Leaking blips, markers, DUI objects | Clean up state inside `onResourceStop` |
+
+## 2. Production Code Examples
 
 ```lua
--- BAD: Runs every single game frame (~60-144 times/sec) regardless of distance
+-- Dynamic Sleep Pattern (0.00 ms CPU impact when idle)
 CreateThread(function()
-    while true do
-        Wait(0)
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        DrawMarker(1, targetCoords.x, targetCoords.y, targetCoords.z, 0,0,0, 0,0,0, 1.0, 1.0, 1.0, 255,0,0,200, false, false, 2, false, nil, nil, false)
-    end
-end)
-```
-
-### ✅ Best Practice: Dynamic Sleep Intervals
-
-```lua
--- GOOD: Sleeps 1000ms when far away, drops to Wait(0) only when player is nearby
-CreateThread(function()
+    local shopCoords = vector3(25.0, -1345.0, 29.5)
     while true do
         local sleep = 1000
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        local dist = #(coords - targetCoords) -- Fast vector distance in Lua 5.4
+        local playerCoords = GetEntityCoords(PlayerPedId())
+        local distance = #(playerCoords - shopCoords)
 
-        if dist < 20.0 then
+        if distance < 15.0 then
             sleep = 0
-            DrawMarker(1, targetCoords.x, targetCoords.y, targetCoords.z, 0,0,0, 0,0,0, 1.0, 1.0, 1.0, 255,0,0,200, false, false, 2, false, nil, nil, false)
-            if dist < 1.5 then
-                -- Show prompt
+            DrawMarker(1, shopCoords.x, shopCoords.y, shopCoords.z - 1.0, 0, 0, 0, 0, 0, 0, 1.5, 1.5, 0.75, 255, 50, 50, 200, false, false, 2, false, nil, nil, false)
+            if distance < 2.0 then
+                -- Display prompt & handle input
             end
         end
-
         Wait(sleep)
     end
 end)
 ```
 
-## Optimization Checklist
+## 3. Pitfalls & Best Practices
 
-1. **Cache Local Handles:**
-   - Instead of calling `PlayerPedId()` 10 times in a function, store `local ped = PlayerPedId()` once.
-2. **Use Vector Math (`#` length operator):**
-   - In Lua 5.4, `#(coordsA - coordsB)` is significantly faster than `GetDistanceBetweenCoords()`.
-3. **Clean Up on Resource Stop:**
-   - Always delete created blips, spawned peds, and remove state handlers when the resource stops:
-   ```lua
-   AddEventHandler('onResourceStop', function(resourceName)
-       if GetCurrentResourceName() ~= resourceName then return end
-       -- delete spawned objects/blips here
-   end)
-   ```
-4. **Use ox_lib / Caching Helpers:**
-   - Use `lib.points` or spatial grids instead of manual distance loop checks where possible.
+- **Never create runaway threads:** Loops spawned on every key press without exit conditions cause memory and CPU leaks.

@@ -1,36 +1,31 @@
-﻿# FiveM Native Fuel Consumption Subsystem
+﻿---
+title: "FiveM Native Fuel Consumption Subsystem"
+description: "Managing vehicle fuel levels and consumption rates with FiveM native engine multipliers."
+keywords: ["fuel", "gas", "gas station", "setvehiclefuellevel", "getvehiclefuellevel", "setfuelconsumptionstatemultiplier"]
+---
 
-FiveM provides a built-in native vehicle fuel simulation subsystem, removing the need for heavy custom tick-loop math.
+# FiveM Native Fuel Consumption Subsystem
 
-## Enabling and Managing Fuel State
+FiveM provides a built-in native vehicle fuel simulation subsystem that eliminates heavy custom frame-tick calculation loops.
+
+## 1. Quick Reference
+
+| Function | Description |
+| :--- | :--- |
+| `SetFuelConsumptionState(vehicle, state)` | Enables or disables native fuel consumption |
+| `GetVehicleFuelLevel(vehicle)` | Reads current fuel level (0.0 - 100.0) |
+| `SetVehicleFuelLevel(vehicle, level)` | Sets current fuel level |
+| `SetFuelConsumptionRateMultiplier(vehicle, mult)` | Multiplies fuel burn rate (1.0 = normal) |
+
+## 2. Production Code Examples
 
 ```lua
 local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
-
--- 1. Enable native fuel consumption for a vehicle
 SetFuelConsumptionState(vehicle, true)
-
--- 2. Read and write fuel level (0.0 to 100.0)
-local currentFuel = GetVehicleFuelLevel(vehicle)
-SetVehicleFuelLevel(vehicle, 65.0)
-
--- 3. Adjust consumption rate multiplier (1.0 = normal, 2.0 = double consumption)
-SetFuelConsumptionRateMultiplier(vehicle, 1.25)
+SetVehicleFuelLevel(vehicle, 80.0)
+SetFuelConsumptionRateMultiplier(vehicle, 1.2)
 ```
 
-## Integrating with Vehicle Handling
+## 3. Pitfalls & Best Practices
 
-Native fuel calculation accounts for engine RPM, throttle input, and vehicle class automatically.
-
-```lua
--- Example: Gas Station Refuel Loop
-local function refuelVehicle(vehicle)
-    local fuel = GetVehicleFuelLevel(vehicle)
-    while fuel < 100.0 do
-        Wait(200)
-        fuel = math.min(100.0, fuel + 2.0)
-        SetVehicleFuelLevel(vehicle, fuel)
-    end
-    print("Refuel complete!")
-end
-```
+- **Zero CPU Overhead:** Use native fuel functions instead of running custom `while true do Wait(1000)` fuel decay threads.

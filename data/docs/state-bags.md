@@ -1,60 +1,37 @@
-﻿# FiveM StateBags Guide
+﻿---
+title: "FiveM State Bags Guide"
+description: "Synchronized key-value state replication on Entities, Players, and Global Server State with change handlers."
+keywords: ["state bags", "statebags", "entity state", "player state", "globalstate", "addstatebagchangehandler", "sync"]
+---
 
-StateBags provide synchronized key-value state storage across Client and Server for Entities, Players, and Global state. They replace heavy network event spam for tracking entity states (e.g. handcuffed, trunk open, faction).
+# FiveM State Bags Guide
 
-## Types of StateBags
+State Bags provide automatic network replication for key-value pairs attached to Entities, Players, or the Global Server State.
 
-1. **GlobalState**: Shared globally across the whole server and all clients.
-2. **Player(source).state**: State associated with a specific connected player.
-3. **Entity(handle).state**: State attached to a networked game entity (Ped, Vehicle, Object).
+## 1. Quick Reference
 
-## Reading and Writing State
+| State Bag Scope | Access Pattern | Sync Target |
+| :--- | :--- | :--- |
+| **GlobalState** | `GlobalState.weather = "RAIN"` | All connected clients |
+| **Player State** | `Player(src).state.isDead = true` | Synced to all clients |
+| **Entity State** | `Entity(veh).state.plate = "ABC"` | Synced to players in culling radius |
+
+## 2. Production Code Examples
 
 ```lua
--- ===================
--- SERVER SIDE
--- ===================
-
--- 1. Global State
-GlobalState.isDoubleXP = true
-
--- 2. Player State
+-- SERVER SIDE: Set player state
 local playerState = Player(source).state
-playerState:set('job', 'police', true) -- 3rd param (replicated=true) syncs to all clients
+playerState:set('isHandcuffed', true, true) -- 3rd argument 'true' replicates to clients
 
--- 3. Entity State
-local vehicle = GetVehiclePedIsIn(GetPlayerPed(source), false)
-Entity(vehicle).state:set('isFuelPumped', true, true)
-```
-
-```lua
--- ===================
--- CLIENT SIDE
--- ===================
-
--- Read state
-local isDoubleXP = GlobalState.isDoubleXP
-local myJob = LocalPlayer.state.job
-
--- Read entity state
-local vehState = Entity(vehicle).state.isFuelPumped
-```
-
-## StateBag Change Handlers (Reactive Listeners)
-
-Listen reactively whenever a state key changes:
-
-```lua
--- Add a listener for any entity whose 'isFuelPumped' state changes
-AddStateBagChangeHandler('isFuelPumped', nil, function(bagName, key, value, _reserved, replicated)
+-- CLIENT SIDE: Reactive change handler
+AddStateBagChangeHandler('isHandcuffed', nil, function(bagName, key, value)
     local entity = GetEntityFromStateBagName(bagName)
-    if entity and DoesEntityExist(entity) then
-        print(string.format("Entity %s fuel status changed to: %s", entity, tostring(value)))
+    if entity == PlayerPedId() then
+        print("Handcuff state updated to:", value)
     end
 end)
 ```
 
-## StateBag Best Practices
+## 3. Pitfalls & Best Practices
 
-- Use StateBags for **persistent attributes** rather than one-off actions.
-- Only pass `replicated = true` when clients genuinely need to know the state (reduces network traffic).
+- **Avoid Over-Syncing:** Only set the 3rd parameter (`replicated`) to `true` when other clients actually need to know about the state.

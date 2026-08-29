@@ -1,45 +1,32 @@
-﻿# FiveM Events Lifecycle & Cancellation
+﻿---
+title: "FiveM Events Lifecycle & Cancellation"
+description: "Event emitter mechanisms, event order, cancellation via CancelEvent, and duplicate event prevention."
+keywords: ["events", "cancelevent", "waseventcanceled", "addeventhandler", "event lifecycle", "event security"]
+---
+
+# FiveM Events Lifecycle & Cancellation
 
 Events in FiveM are event emitters that support multiple listeners, network routing, and mid-execution cancellation.
 
-## Listening and Handling Events
+## 1. Quick Reference
+
+| Function | APISet | Description |
+| :--- | :--- | :--- |
+| `AddEventHandler(name, cb)` | Shared | Register a local or network event handler |
+| `CancelEvent()` | Shared | Cancel event propagation to subsequent handlers |
+| `WasEventCanceled()` | Shared | Check if an earlier handler canceled the event |
+
+## 2. Production Code Examples
 
 ```lua
--- Local or Network event listener
-AddEventHandler('chatMessage', function(author, color, text)
-    print(string.format("[%s]: %s", author, text))
-end)
-```
-
-## Canceling Events (`CancelEvent`)
-
-Certain base game and framework events can be canceled by calling `CancelEvent()` within the handler. Once canceled, subsequent event listeners and default actions are aborted:
-
-```lua
--- Example: Block specific chat messages or commands
+-- Block unauthorized chat slash commands
 AddEventHandler('chatMessage', function(author, color, text)
     if string.sub(text, 1, 1) == '/' then
-        -- Cancel default chat broadcast for slash commands
-        CancelEvent()
-    end
-end)
-
--- Checking if an event was canceled
-AddEventHandler('chatMessage', function(author, color, text)
-    if WasEventCanceled() then
-        print("Chat message was canceled by a previous handler!")
+        CancelEvent() -- Cancel default chat broadcast
     end
 end)
 ```
 
-## Event Propagation Lifecycle
+## 3. Pitfalls & Best Practices
 
-1. `TriggerEvent` / Network Event is dispatched.
-2. Handlers execute in the order they were registered.
-3. If any handler calls `CancelEvent()`, `WasEventCanceled()` becomes `true`.
-4. Handlers registered after the cancellation can choose to return early if `WasEventCanceled()` is true.
-
-## Event Security Checklist
-
-- Capture `local src = source` immediately in server-side `RegisterNetEvent` handlers.
-- Validate that the player is within interaction distance of the target entity before executing server rewards or state changes.
+- **Handler Execution Order:** Handlers execute in the exact order they were registered in memory.

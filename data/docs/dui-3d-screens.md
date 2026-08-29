@@ -1,60 +1,31 @@
-﻿# Direct-Rendered UI (DUI 3D In-Game Screens)
+﻿---
+title: "Direct-Rendered UI (DUI 3D In-Game Screens)"
+description: "Rendering web pages and browser views onto 3D in-game meshes, TVs, and billboards using CreateDui."
+keywords: ["dui", "createdui", "render target", "3d screen", "webview", "billboard", "tvscreen"]
+---
 
-DUI (Direct-Rendered UI) allows developers to render web pages directly onto in-game 3D world models, televisions, cinema screens, billboards, and computer terminals.
+# Direct-Rendered UI (DUI 3D In-Game Screens)
 
-## How DUI Works
+DUI allows developers to render web pages directly onto in-game 3D world models, televisions, cinema screens, billboards, and computer terminals.
 
-1. **Create the DUI Browser Object (`CreateDui`)**: Spawns an offscreen Chromium web renderer.
-2. **Fetch Texture Handle (`GetDuiHandle`)**: Retrieves the GPU texture handle from the web renderer.
-3. **Link to Render Target Texture (`CreateRuntimeTextureFromDuiHandle`)**: Maps the DUI texture onto a named game texture dictionary (`txd`).
-4. **Draw onto In-Game Prop**: Uses `RegisterNamedRendertarget` to display the texture on a specific model mesh.
+## 1. Quick Reference
 
-## Complete DUI Setup Example
+| Function | Description |
+| :--- | :--- |
+| `CreateDui(url, width, height)` | Creates offscreen Chromium browser |
+| `GetDuiHandle(duiObject)` | Gets GPU texture handle |
+| `CreateRuntimeTextureFromDuiHandle(txd, name, handle)` | Maps DUI onto game texture |
+| `DestroyDui(duiObject)` | Destroys DUI and releases GPU memory |
+
+## 2. Production Code Examples
 
 ```lua
-local duiObject = nil
-local txd = nil
-local textureName = "dui_screen_tex"
-local txdName = "dui_screen_txd"
-local targetModel = `prop_tv_flat_01`
-local renderTargetName = "tvscreen"
-
-CreateThread(function()
-    -- 1. Create DUI Browser (Width: 1280, Height: 720)
-    duiObject = CreateDui('https://www.youtube.com', 1280, 720)
-    local duiHandle = GetDuiHandle(duiObject)
-
-    -- 2. Create Runtime Texture Dictionary
-    txd = CreateRuntimeTxd(txdName)
-    CreateRuntimeTextureFromDuiHandle(txd, textureName, duiHandle)
-
-    -- 3. Link Render Target to Prop
-    RegisterNamedRendertarget(renderTargetName, false)
-    LinkNamedRendertarget(targetModel)
-    local handle = GetNamedRendertargetRenderId(renderTargetName)
-
-    -- 4. Drawing Loop
-    while duiObject do
-        SetTextRenderId(handle)
-        Set_2dLayer(4)
-        SetScriptGfxDrawBehindPausemenu(true)
-        DrawRect(0.5, 0.5, 1.0, 1.0, 0, 0, 0, 255)
-        DrawSprite(txdName, textureName, 0.5, 0.5, 1.0, 1.0, 0.0, 255, 255, 255, 255)
-        SetTextRenderId(GetDefaultScriptRendertargetRenderId())
-        Wait(0)
-    end
-end)
-
--- Cleanup on Resource Stop
-AddEventHandler('onResourceStop', function(res)
-    if res == GetCurrentResourceName() and duiObject then
-        DestroyDui(duiObject)
-        duiObject = nil
-    end
-end)
+local duiObject = CreateDui('https://www.youtube.com', 1280, 720)
+local duiHandle = GetDuiHandle(duiObject)
+local txd = CreateRuntimeTxd("dui_screen_txd")
+CreateRuntimeTextureFromDuiHandle(txd, "dui_screen_tex", duiHandle)
 ```
 
-## DUI Best Practices
+## 3. Pitfalls & Best Practices
 
-- **Always Clean Up (`DestroyDui`)**: Failing to destroy DUI instances when closing or stopping resources causes GPU memory leaks.
-- **Limit Resolution**: Use 1280x720 or 1920x1080. Higher resolutions increase VRAM usage significantly.
+- **Always Destroy on Resource Stop:** Never leave un-destroyed DUI objects when stopping resources to prevent VRAM memory leaks.
