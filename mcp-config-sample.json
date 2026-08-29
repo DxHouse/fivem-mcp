@@ -1,0 +1,13 @@
+﻿{
+  "mcpServers": {
+    "fivem-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "E:\\WorkStation\\VibeCoding\\fivem-mcp",
+        "run",
+        "fivem-mcp"
+      ]
+    }
+  }
+}

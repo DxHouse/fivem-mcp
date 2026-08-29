@@ -1,0 +1,19 @@
+[project]
+name = "fivem-mcp"
+version = "0.1.0"
+description = "FastMCP Server Framework for FiveM"
+readme = "README.md"
+authors = [
+    { name = "Natthaphum Phusong", email = "info.hzelnat@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=3.4.7",
+]
+
+[project.scripts]
+fivem-mcp = "fivem_mcp.server:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
