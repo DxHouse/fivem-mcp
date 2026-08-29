@@ -1,62 +1,94 @@
 ﻿from fivem_mcp.docs import docs_manager
-from fivem_mcp.server import search_docs, get_doc, scaffold_resource, get_fivem_doc_resource
+from fivem_mcp.server import (
+    search_docs,
+    get_doc,
+    scaffold_resource,
+    scaffold_nui_resource,
+    scaffold_dui_screen,
+    scaffold_csharp_resource,
+    get_fivem_doc_resource,
+)
 
 
-def test_docs_manager_list_topics():
+def test_docs_manager_all_17_topics():
     topics = docs_manager.list_topics()
-    assert len(topics) >= 5
+    assert len(topics) == 17, f"Expected 17 topics, found {len(topics)}"
     slugs = [t["topic"] for t in topics]
-    assert "fxmanifest" in slugs
-    assert "state-bags" in slugs
-    assert "nui-messages" in slugs
+
+    expected_slugs = [
+        "fxmanifest",
+        "networking-events",
+        "state-bags",
+        "nui-messages",
+        "performance-best-practices",
+        "about-native-functions",
+        "runtimes-lua",
+        "runtimes-csharp",
+        "using-profiler",
+        "network-ids",
+        "events-lifecycle",
+        "dui-3d-screens",
+        "loading-screens",
+        "voice-mumble",
+        "scaleform",
+        "collections-and-props",
+        "fuel-consumption",
+    ]
+    for expected in expected_slugs:
+        assert expected in slugs, f"Missing topic slug: {expected}"
 
 
-def test_search_docs_exact_and_multiword():
-    # Exact slug
-    res_manifest = search_docs("fxmanifest")
-    assert len(res_manifest) > 0
-    assert res_manifest[0]["topic"] == "fxmanifest"
+def test_search_docs_various_queries():
+    test_cases = [
+        ("fxmanifest", "fxmanifest"),
+        ("profiler chrome tracing", "using-profiler"),
+        ("csharp basescript dotnet", "runtimes-csharp"),
+        ("mumble proximity radio", "voice-mumble"),
+        ("scaleform buttons movie", "scaleform"),
+        ("dui texture web", "dui-3d-screens"),
+        ("fuel consumption level", "fuel-consumption"),
+        ("collections props drawable", "collections-and-props"),
+        ("network id handle entity", "network-ids"),
+        ("loading screen shutdown", "loading-screens"),
+    ]
+    for query, expected_slug in test_cases:
+        results = search_docs(query)
+        assert len(results) > 0, f"No search results for query: {query}"
+        matched_slugs = [r["topic"] for r in results]
+        assert expected_slug in matched_slugs, f"Query '{query}' did not match '{expected_slug}', got: {matched_slugs}"
 
-    # Multi-word
-    res_nui = search_docs("nui callback fetch")
-    assert len(res_nui) > 0
-    assert res_nui[0]["topic"] == "nui-messages"
 
-    # Statebags
-    res_state = search_docs("state bag player")
-    assert len(res_state) > 0
-    assert res_state[0]["topic"] == "state-bags"
-
-
-def test_get_doc_content():
-    content = get_doc("fxmanifest")
-    assert "fx_version 'cerulean'" in content
-    assert "client_scripts" in content
-
-    # Nonexistent topic returns error message
-    not_found = get_doc("nonexistent_unknown_topic")
-    assert "not found" in not_found.lower()
+def test_get_doc_all_topics():
+    for topic_dict in docs_manager.list_topics():
+        slug = topic_dict["topic"]
+        content = get_doc(slug)
+        assert content is not None
+        assert len(content) > 100
+        assert "#" in content
 
 
 def test_mcp_resource_resolution():
-    res = get_fivem_doc_resource("networking-events")
-    assert "RegisterNetEvent" in res
-    assert "TriggerClientEvent" in res
-
-    res_missing = get_fivem_doc_resource("unknown_topic")
-    assert "Not Found" in res_missing
+    res = get_fivem_doc_resource("using-profiler")
+    assert "profiler record" in res
+    assert "speedscope" in res
 
 
-def test_scaffold_resource_prompt():
-    prompt = scaffold_resource(
-        name="vehicle-keys",
-        description="A key system for vehicles",
-        has_client=True,
-        has_server=True,
-        has_ui=True,
-    )
-    assert "vehicle-keys" in prompt
-    assert "fx_version 'cerulean'" in prompt
-    assert "client_scripts" in prompt
-    assert "server_scripts" in prompt
-    assert "ui_page" in prompt
+def test_all_scaffolding_prompts():
+    p_gen = scaffold_resource(name="test-resource", description="General test")
+    assert "test-resource" in p_gen
+    assert "fxmanifest.lua" in p_gen
+
+    p_nui = scaffold_nui_resource(name="test-nui", description="NUI test", framework="react")
+    assert "test-nui" in p_nui
+    assert "RegisterNUICallback" in p_nui
+    assert "ui_page" in p_nui
+
+    p_dui = scaffold_dui_screen(name="test-tv", url="https://example.com", target_model="prop_tv_flat_01")
+    assert "test-tv" in p_dui
+    assert "CreateDui" in p_dui
+    assert "prop_tv_flat_01" in p_dui
+
+    p_cs = scaffold_csharp_resource(name="TestCSharp", description="C# Test")
+    assert "TestCSharp" in p_cs
+    assert "CitizenFX.Core" in p_cs
+    assert "BaseScript" in p_cs

@@ -55,7 +55,7 @@ def search_docs(query: str, limit: int = 5) -> list[dict[str, Any]]:
     Search FiveM developer guides and architectural documentation.
 
     Args:
-        query: Keywords to search for (e.g. 'fxmanifest', 'state bags', 'nui callbacks', 'events').
+        query: Keywords to search for (e.g. 'fxmanifest', 'state bags', 'nui callbacks', 'events', 'csharp', 'profiler', 'dui', 'scaleform').
         limit: Maximum number of matching topics to return (default: 5).
     """
     return docs_manager.search(query, limit=limit)
@@ -67,7 +67,7 @@ def get_doc(topic: str) -> str:
     Retrieve the full Markdown developer guide for a specific FiveM topic.
 
     Args:
-        topic: Topic slug or name (e.g. 'fxmanifest', 'networking-events', 'state-bags', 'nui-messages', 'performance-best-practices').
+        topic: Topic slug or name (e.g. 'fxmanifest', 'networking-events', 'state-bags', 'nui-messages', 'runtimes-csharp', 'using-profiler', 'dui-3d-screens').
     """
     content = docs_manager.get_doc(topic)
     if not content:
@@ -90,7 +90,7 @@ def get_fivem_doc_resource(topic: str) -> str:
 
 
 # ============================================================================
-# MCP Prompts
+# MCP Prompts & Templates
 # ============================================================================
 
 @mcp.prompt()
@@ -102,17 +102,9 @@ def scaffold_resource(
     has_ui: bool = False,
 ) -> str:
     """
-    Generate instructions and templates to scaffold a production-ready FiveM resource.
-
-    Args:
-        name: Name of the FiveM resource (kebab-case, e.g. 'custom-garage').
-        description: Brief explanation of the resource's purpose.
-        has_client: Include client-side Lua script directory and entry points.
-        has_server: Include server-side Lua script directory and entry points.
-        has_ui: Include NUI HTML/JS/CSS assets and manifest wiring.
+    Generate instructions and templates to scaffold a standard FiveM resource.
     """
     clean_desc = description or f"A modern FiveM resource for {name}"
-    
     manifest_client = "    'client/*.lua',\n" if has_client else ""
     manifest_server = "    'server/*.lua',\n" if has_server else ""
     manifest_ui_file = "    'web/dist/index.html',\n    'web/dist/assets/*.*',\n" if has_ui else ""
@@ -120,15 +112,7 @@ def scaffold_resource(
 
     return f"""Please scaffold a standard, production-ready FiveM resource named `{name}`.
 
-### Resource Metadata
-- **Name:** {name}
-- **Description:** {clean_desc}
-- **Lua Version:** 5.4 (`lua54 'yes'`)
-- **FX Version:** `cerulean`
-- **Target Game:** `gta5`
-
-### Requirements
-1. **`fxmanifest.lua`**:
+### Manifest (`fxmanifest.lua`):
 ```lua
 fx_version 'cerulean'
 game 'gta5'
@@ -153,14 +137,98 @@ files {{
 
 {manifest_ui_page}
 ```
+"""
 
-2. **File Structure**:
-- `config.lua` (Standard Config table)
-{'- `client/main.lua` (Event handlers and game logic)' if has_client else ''}
-{'- `server/main.lua` (Authoritative server events with source validation)' if has_server else ''}
-{'- `web/dist/index.html` (NUI message passing & callback endpoints)' if has_ui else ''}
 
-Please write the clean boilerplate files following FiveM performance best practices (dynamic sleep intervals in loops, cached entity handles, secure event source checks).
+@mcp.prompt()
+def scaffold_nui_resource(
+    name: str,
+    description: str = "",
+    framework: str = "vanilla-html",
+) -> str:
+    """
+    Generate a complete FiveM NUI Web UI resource template with message envelopes and callbacks.
+    """
+    clean_desc = description or f"A modern NUI Web UI resource for {name}"
+    return f"""Please scaffold a production-ready FiveM NUI resource named `{name}` ({framework}).
+
+### File Structure:
+- `fxmanifest.lua`
+- `config.lua`
+- `client/main.lua` (NUI focus, message dispatching, and `RegisterNUICallback` handlers)
+- `server/main.lua` (Validated server event handlers)
+- `web/index.html` (NUI HTML interface with message listeners and fetch POST callbacks)
+- `web/script.js` (Message envelope handler with `GetParentResourceName()`)
+- `web/style.css` (Clean modern styling)
+
+### Requirements:
+1. `fxmanifest.lua` must declare `ui_page 'web/index.html'` and `files {{ 'web/**' }}` with `lua54 'yes'`.
+2. `web/script.js` must invoke `fetch(`https://${{GetParentResourceName()}}/<callback>`, ...)` and client Lua must always call `cb({{ ok = true }})`.
+3. Client Lua must manage `SetNuiFocus(true, true)` on open and release focus on close.
+"""
+
+
+@mcp.prompt()
+def scaffold_dui_screen(
+    name: str,
+    url: str = "https://www.youtube.com",
+    target_model: str = "prop_tv_flat_01",
+    render_target: str = "tvscreen",
+) -> str:
+    """
+    Generate a Direct-Rendered UI (DUI) resource template to project a web page onto a 3D in-game prop.
+    """
+    return f"""Please scaffold a FiveM DUI 3D Screen resource named `{name}`.
+
+### Configuration:
+- **Target Prop Model:** `{target_model}`
+- **Render Target Name:** `{render_target}`
+- **Default Web URL:** `{url}`
+
+### Requirements:
+1. Client script must create DUI with `CreateDui('{url}', 1280, 720)` and runtime texture dictionary.
+2. Link render target to model using `RegisterNamedRendertarget('{render_target}', false)` and `LinkNamedRendertarget(`{target_model}`)`.
+3. Render loop drawing `DrawSprite` onto the active render target with `SetTextRenderId`.
+4. Resource stop cleanup handler calling `DestroyDui(duiObject)` to prevent GPU memory leaks.
+"""
+
+
+@mcp.prompt()
+def scaffold_csharp_resource(
+    name: str,
+    description: str = "",
+) -> str:
+    """
+    Generate a modern .NET C# FiveM resource template with BaseScript, EventHandlers, and .csproj.
+    """
+    clean_desc = description or f"A C# .NET FiveM resource for {name}"
+    return f"""Please scaffold a .NET C# FiveM resource named `{name}`.
+
+### Requirements:
+1. **Client Project (`Client/{name}.Client.csproj`)**:
+   - `TargetFramework: netstandard2.0`
+   - `PackageReference: CitizenFX.Core.Client`
+   - `TargetName: {name}.Client.net`
+
+2. **Server Project (`Server/{name}.Server.csproj`)**:
+   - `TargetFramework: netstandard2.0`
+   - `PackageReference: CitizenFX.Core.Server`
+   - `TargetName: {name}.Server.net`
+
+3. **`fxmanifest.lua`**:
+```lua
+fx_version 'cerulean'
+game 'gta5'
+
+name '{name}'
+description '{clean_desc}'
+version '1.0.0'
+
+client_script 'bin/Release/netstandard2.0/{name}.Client.net.dll'
+server_script 'bin/Release/netstandard2.0/{name}.Server.net.dll'
+```
+
+4. Implement `ClientMain : BaseScript` with `EventHandlers` and `Tick += OnTick;` async task loops.
 """
 
 
