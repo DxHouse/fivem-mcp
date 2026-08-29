@@ -26,8 +26,17 @@ FastMCP Server Framework for FiveM built with `uv`.
 ### 📖 Resources
 - **`docs://fivem/{topic}`**: Direct access to Markdown developer documentation (e.g. `docs://fivem/fxmanifest`, `docs://fivem/state-bags`).
 
-### 💡 Prompts
-- **`scaffold_resource(name, description, has_client, has_server, has_ui)`**: Generates complete boilerplate instructions and modern `fxmanifest.lua` configuration for a new FiveM resource.
+### 💡 Prompts (10 Templates)
+- **`scaffold_resource`**: Standard FiveM resource scaffolding template.
+- **`scaffold_nui_resource`**: Complete NUI Web UI (React/Vue/HTML) resource template.
+- **`scaffold_dui_screen`**: 3D In-game screen / billboard rendering resource template.
+- **`scaffold_csharp_resource`**: .NET Standard C# `BaseScript` project template.
+- **`scaffold_player_connecting`**: Connection deferrals, identifier validation, whitelist/ban checks.
+- **`scaffold_onesync_spawner`**: Server-authoritative entity spawning with OneSync and routing buckets.
+- **`scaffold_interaction_point`**: Dynamic sleep in-game interaction point with Marker, Blip, and key trigger.
+- **`scaffold_damage_tracker`**: Low-level `gameEventTriggered` damage and kill tracking.
+- **`scaffold_secure_event_handler`**: Secure server event handler with rate limiting and distance validation.
+- **`scaffold_safe_transaction`**: Thread-safe authoritative economy transaction handler with mutex locking.
 
 ## Data Storage
 
