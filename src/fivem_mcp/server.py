@@ -55,7 +55,7 @@ def search_docs(query: str, limit: int = 5) -> list[dict[str, Any]]:
     Search FiveM developer guides and architectural documentation.
 
     Args:
-        query: Keywords to search for (e.g. 'fxmanifest', 'state bags', 'nui callbacks', 'events', 'csharp', 'profiler', 'dui', 'scaleform').
+        query: Keywords to search for (e.g. 'fxmanifest', 'state bags', 'events', 'csharp', 'profiler', 'onesync', 'convars', 'deferrals').
         limit: Maximum number of matching topics to return (default: 5).
     """
     return docs_manager.search(query, limit=limit)
@@ -67,7 +67,7 @@ def get_doc(topic: str) -> str:
     Retrieve the full Markdown developer guide for a specific FiveM topic.
 
     Args:
-        topic: Topic slug or name (e.g. 'fxmanifest', 'networking-events', 'state-bags', 'nui-messages', 'runtimes-csharp', 'using-profiler', 'dui-3d-screens').
+        topic: Topic slug or name (e.g. 'fxmanifest', 'networking-events', 'events-catalog', 'convars', 'onesync-routing-buckets', 'client-functions-ref', 'server-functions-ref').
     """
     content = docs_manager.get_doc(topic)
     if not content:
@@ -101,9 +101,7 @@ def scaffold_resource(
     has_server: bool = True,
     has_ui: bool = False,
 ) -> str:
-    """
-    Generate instructions and templates to scaffold a standard FiveM resource.
-    """
+    """Generate instructions and templates to scaffold a standard FiveM resource."""
     clean_desc = description or f"A modern FiveM resource for {name}"
     manifest_client = "    'client/*.lua',\n" if has_client else ""
     manifest_server = "    'server/*.lua',\n" if has_server else ""
@@ -146,25 +144,17 @@ def scaffold_nui_resource(
     description: str = "",
     framework: str = "vanilla-html",
 ) -> str:
-    """
-    Generate a complete FiveM NUI Web UI resource template with message envelopes and callbacks.
-    """
+    """Generate a complete FiveM NUI Web UI resource template with message envelopes and callbacks."""
     clean_desc = description or f"A modern NUI Web UI resource for {name}"
     return f"""Please scaffold a production-ready FiveM NUI resource named `{name}` ({framework}).
 
 ### File Structure:
-- `fxmanifest.lua`
+- `fxmanifest.lua` (with `ui_page 'web/dist/index.html'` and `files {{ 'web/dist/**' }}`)
 - `config.lua`
-- `client/main.lua` (NUI focus, message dispatching, and `RegisterNUICallback` handlers)
-- `server/main.lua` (Validated server event handlers)
-- `web/index.html` (NUI HTML interface with message listeners and fetch POST callbacks)
-- `web/script.js` (Message envelope handler with `GetParentResourceName()`)
-- `web/style.css` (Clean modern styling)
-
-### Requirements:
-1. `fxmanifest.lua` must declare `ui_page 'web/index.html'` and `files {{ 'web/**' }}` with `lua54 'yes'`.
-2. `web/script.js` must invoke `fetch(`https://${{GetParentResourceName()}}/<callback>`, ...)` and client Lua must always call `cb({{ ok = true }})`.
-3. Client Lua must manage `SetNuiFocus(true, true)` on open and release focus on close.
+- `client/main.lua` (NUI focus handling, `SendNUIMessage`, and `RegisterNUICallback`)
+- `server/main.lua` (Authoritative event validation)
+- `web/dist/index.html` (NUI HTML interface with message listeners)
+- `web/dist/script.js` (Message envelope handler with `GetParentResourceName()`)
 """
 
 
@@ -175,9 +165,7 @@ def scaffold_dui_screen(
     target_model: str = "prop_tv_flat_01",
     render_target: str = "tvscreen",
 ) -> str:
-    """
-    Generate a Direct-Rendered UI (DUI) resource template to project a web page onto a 3D in-game prop.
-    """
+    """Generate a Direct-Rendered UI (DUI) resource template to project a web page onto a 3D in-game prop."""
     return f"""Please scaffold a FiveM DUI 3D Screen resource named `{name}`.
 
 ### Configuration:
@@ -198,9 +186,7 @@ def scaffold_csharp_resource(
     name: str,
     description: str = "",
 ) -> str:
-    """
-    Generate a modern .NET C# FiveM resource template with BaseScript, EventHandlers, and .csproj.
-    """
+    """Generate a modern .NET C# FiveM resource template with BaseScript, EventHandlers, and .csproj."""
     clean_desc = description or f"A C# .NET FiveM resource for {name}"
     return f"""Please scaffold a .NET C# FiveM resource named `{name}`.
 
@@ -215,20 +201,39 @@ def scaffold_csharp_resource(
    - `PackageReference: CitizenFX.Core.Server`
    - `TargetName: {name}.Server.net`
 
-3. **`fxmanifest.lua`**:
-```lua
-fx_version 'cerulean'
-game 'gta5'
+3. Implement `ClientMain : BaseScript` with `EventHandlers` and `Tick += OnTick;` async task loops.
+"""
 
-name '{name}'
-description '{clean_desc}'
-version '1.0.0'
 
-client_script 'bin/Release/netstandard2.0/{name}.Client.net.dll'
-server_script 'bin/Release/netstandard2.0/{name}.Server.net.dll'
-```
+@mcp.prompt()
+def scaffold_player_connecting(
+    name: str = "auth-deferrals",
+) -> str:
+    """Generate a production-ready FiveM player connection deferral handler with whitelist and identifier checks."""
+    return f"""Please scaffold a FiveM connection deferrals resource named `{name}`.
 
-4. Implement `ClientMain : BaseScript` with `EventHandlers` and `Tick += OnTick;` async task loops.
+### Requirements:
+1. Handle `playerConnecting(playerName, setKickReason, deferrals)` event on the server.
+2. Call `deferrals.defer()`, yield with `Wait(0)`, and display progress with `deferrals.update(...)`.
+3. Extract player identifiers using `GetPlayerIdentifiers(src)` and verify Rockstar License (`license:`).
+4. Provide structured error reject messages via `deferrals.done('Reason')` and approve via `deferrals.done()`.
+5. Support adaptive card / presentation UI during queue or verification.
+"""
+
+
+@mcp.prompt()
+def scaffold_onesync_spawner(
+    name: str = "onesync-spawner",
+    entity_type: str = "automobile",
+) -> str:
+    """Generate a OneSync server-authoritative entity spawning and routing bucket management resource."""
+    return f"""Please scaffold a server-authoritative OneSync entity manager named `{name}`.
+
+### Requirements:
+1. Server script spawns entities using `CreateVehicleServerSetter(model, '{entity_type}', x, y, z, heading)`.
+2. Wait for `DoesEntityExist(entity)` and retrieve synchronized `NetworkGetNetworkIdFromEntity(entity)`.
+3. Support virtual world isolation using `SetPlayerRoutingBucket(src, bucketId)` and `SetEntityRoutingBucket(entity, bucketId)`.
+4. Provide clean client-side event triggers to request and receive spawned network IDs.
 """
 
 

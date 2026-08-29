@@ -1,6 +1,6 @@
 ﻿# FiveM Native API & Developer Documentation Context
 
-Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, and MCP resources for script development.
+Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, Scripting Reference catalogs, and MCP resources for script development.
 
 ## Language
 
@@ -31,6 +31,34 @@ _Avoid_: Config file, package.json, meta file
 **StateBag**:
 A synchronized, key-value state store attached to entities, players, or global server state.
 _Avoid_: Sync table, shared variable, entity metadata
+
+**Convar**:
+A console variable in FXServer used for server configuration, feature toggling, and client replication.
+_Avoid_: Config variable, server setting, env var
+
+**OneSync**:
+FiveM's custom multiplayer synchronization engine supporting high player counts, server-side entity creation, and spatial culling.
+_Avoid_: Sync engine, netcode, server sync
+
+**RoutingBucket**:
+A virtual world / dimension index in OneSync isolating players and entities from other buckets.
+_Avoid_: Dimension, virtual world, instance
+
+**Deferrals**:
+A connection handshake mechanism allowing server scripts to pause player connection, display adaptive cards, and verify whitelists.
+_Avoid_: Connection hook, queue system, login check
+
+**AcePermission**:
+An Access Control Entry permission node (e.g. `command.kick`, `group.admin`) evaluated by FXServer.
+_Avoid_: Admin level, user rank, permission role
+
+**Identifier**:
+A player's unique authentication string (e.g. `license:xxx`, `discord:xxx`, `steam:xxx`).
+_Avoid_: Account ID, user identifier, player GUID
+
+**GameEvent**:
+A low-level C++ game engine event (e.g. `CEventNetworkEntityDamage`) caught via `gameEventTriggered`.
+_Avoid_: Engine event, damage signal
 
 **NUI**:
 Native User Interface; an embedded Chromium web view rendering HTML/CSS/JS inside the game client.

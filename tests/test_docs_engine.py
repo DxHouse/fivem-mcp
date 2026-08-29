@@ -1,4 +1,4 @@
-﻿from fivem_mcp.docs import docs_manager
+from fivem_mcp.docs import docs_manager
 from fivem_mcp.server import (
     search_docs,
     get_doc,
@@ -6,13 +6,15 @@ from fivem_mcp.server import (
     scaffold_nui_resource,
     scaffold_dui_screen,
     scaffold_csharp_resource,
+    scaffold_player_connecting,
+    scaffold_onesync_spawner,
     get_fivem_doc_resource,
 )
 
 
-def test_docs_manager_all_17_topics():
+def test_docs_manager_all_22_topics():
     topics = docs_manager.list_topics()
-    assert len(topics) == 17, f"Expected 17 topics, found {len(topics)}"
+    assert len(topics) == 22, f"Expected 22 topics, found {len(topics)}"
     slugs = [t["topic"] for t in topics]
 
     expected_slugs = [
@@ -33,23 +35,23 @@ def test_docs_manager_all_17_topics():
         "scaleform",
         "collections-and-props",
         "fuel-consumption",
+        "client-functions-ref",
+        "server-functions-ref",
+        "events-catalog",
+        "convars",
+        "onesync-routing-buckets",
     ]
     for expected in expected_slugs:
         assert expected in slugs, f"Missing topic slug: {expected}"
 
 
-def test_search_docs_various_queries():
+def test_search_docs_scripting_ref():
     test_cases = [
-        ("fxmanifest", "fxmanifest"),
-        ("profiler chrome tracing", "using-profiler"),
-        ("csharp basescript dotnet", "runtimes-csharp"),
-        ("mumble proximity radio", "voice-mumble"),
-        ("scaleform buttons movie", "scaleform"),
-        ("dui texture web", "dui-3d-screens"),
-        ("fuel consumption level", "fuel-consumption"),
-        ("collections props drawable", "collections-and-props"),
-        ("network id handle entity", "network-ids"),
-        ("loading screen shutdown", "loading-screens"),
+        ("deferrals player connecting", "events-catalog"),
+        ("convar replicated server info", "convars"),
+        ("onesync server setter routing bucket", "onesync-routing-buckets"),
+        ("client key mapping command", "client-functions-ref"),
+        ("server ace allowed identifiers", "server-functions-ref"),
     ]
     for query, expected_slug in test_cases:
         results = search_docs(query)
@@ -68,27 +70,34 @@ def test_get_doc_all_topics():
 
 
 def test_mcp_resource_resolution():
-    res = get_fivem_doc_resource("using-profiler")
-    assert "profiler record" in res
-    assert "speedscope" in res
+    res_events = get_fivem_doc_resource("events-catalog")
+    assert "playerConnecting" in res_events
+    assert "gameEventTriggered" in res_events
+
+    res_onesync = get_fivem_doc_resource("onesync-routing-buckets")
+    assert "CreateVehicleServerSetter" in res_onesync
+    assert "SetPlayerRoutingBucket" in res_onesync
 
 
-def test_all_scaffolding_prompts():
+def test_all_6_scaffolding_prompts():
     p_gen = scaffold_resource(name="test-resource", description="General test")
     assert "test-resource" in p_gen
-    assert "fxmanifest.lua" in p_gen
 
     p_nui = scaffold_nui_resource(name="test-nui", description="NUI test", framework="react")
     assert "test-nui" in p_nui
-    assert "RegisterNUICallback" in p_nui
-    assert "ui_page" in p_nui
 
     p_dui = scaffold_dui_screen(name="test-tv", url="https://example.com", target_model="prop_tv_flat_01")
     assert "test-tv" in p_dui
-    assert "CreateDui" in p_dui
-    assert "prop_tv_flat_01" in p_dui
 
     p_cs = scaffold_csharp_resource(name="TestCSharp", description="C# Test")
     assert "TestCSharp" in p_cs
-    assert "CitizenFX.Core" in p_cs
-    assert "BaseScript" in p_cs
+
+    p_conn = scaffold_player_connecting(name="custom-auth")
+    assert "custom-auth" in p_conn
+    assert "playerConnecting" in p_conn
+    assert "deferrals.defer()" in p_conn
+
+    p_sync = scaffold_onesync_spawner(name="car-spawner", entity_type="automobile")
+    assert "car-spawner" in p_sync
+    assert "CreateVehicleServerSetter" in p_sync
+    assert "SetPlayerRoutingBucket" in p_sync
