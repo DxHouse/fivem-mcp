@@ -1,6 +1,6 @@
 ﻿# FiveM Native API & Developer Documentation Context
 
-Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, Scripting Reference catalogs, Game Reference constant tables, and MCP resources for script development.
+Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, Scripting Reference catalogs, Game Reference constant tables, developer architecture docs, and MCP resources for script development.
 
 ## Language
 
@@ -83,6 +83,22 @@ _Avoid_: Nameplate, overhead text
 **Zone**:
 A named GTA V geographical region identified by a 3-letter uppercase code (e.g. `AIRP`, `DOWNT`).
 _Avoid_: Map region, neighborhood code
+
+**Sandbox**:
+The isolated execution environment in FiveM preventing unauthorized client-side file system and OS access.
+_Avoid_: Security jail, VM layer
+
+**Msgpack**:
+The MessagePack binary serialization format used to transport data across different FiveM script runtimes and network events.
+_Avoid_: Binary JSON, serialization buffer
+
+**TrustBoundary**:
+The strict separation between untrusted client game instances and authoritative FXServer daemons.
+_Avoid_: Security wall, client trust
+
+**RateLimiter**:
+A per-player cooldown tracker mitigating event spam and race-condition exploitation.
+_Avoid_: Flood gate, spam filter
 
 **NUI**:
 Native User Interface; an embedded Chromium web view rendering HTML/CSS/JS inside the game client.

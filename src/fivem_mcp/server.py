@@ -52,10 +52,10 @@ def get_native_detail(name_or_hash: str) -> dict[str, Any] | str:
 @mcp.tool()
 def search_docs(query: str, limit: int = 5) -> list[dict[str, Any]]:
     """
-    Search FiveM developer guides, game reference constants, and architectural documentation.
+    Search FiveM developer guides, game reference constants, security architecture, and documentation.
 
     Args:
-        query: Keywords to search for (e.g. 'controls', 'blip markers', 'hud colors', 'vehicles', 'weapons', 'game events', 'zones', 'convars').
+        query: Keywords to search for (e.g. 'sandbox', 'security', 'runtimes', 'controls', 'blips', 'events').
         limit: Maximum number of matching topics to return (default: 5).
     """
     return docs_manager.search(query, limit=limit)
@@ -67,7 +67,7 @@ def get_doc(topic: str) -> str:
     Retrieve the full Markdown developer guide for a specific FiveM topic.
 
     Args:
-        topic: Topic slug or name (e.g. 'game-references-controls', 'game-references-blips-markers', 'game-references-ui-hud', 'events-catalog').
+        topic: Topic slug or name (e.g. 'developers-sandbox', 'developers-script-runtimes', 'developers-server-security').
     """
     content = docs_manager.get_doc(topic)
     if not content:
@@ -269,6 +269,38 @@ def scaffold_damage_tracker(
 2. Extract victim (`args[1]`), attacker (`args[2]`), fatal flag (`args[6] == 1`), and weapon hash (`args[7]`).
 3. Check if victim is `PlayerPedId()`, resolve attacker player name if attacker is a player ped.
 4. Dispatch structured client-to-server event `TriggerServerEvent('combat:onPlayerDamage', ...)` with weapon hash mapping.
+"""
+
+
+@mcp.prompt()
+def scaffold_secure_event_handler(
+    name: str = "secure-reward",
+    cooldown_ms: int = 3000,
+    max_distance: float = 5.0,
+) -> str:
+    """Generate a highly secure server event handler with source isolation, rate limiting, and coordinate distance verification."""
+    return f"""Please scaffold a secure FiveM server-side event handler named `{name}`.
+
+### Security Requirements:
+1. **Source Isolation:** Immediately capture `local src = source` in the handler closure.
+2. **Rate Limiting:** Enforce a per-player cooldown of `{cooldown_ms}` ms using `GetGameTimer()`.
+3. **Distance Verification:** Verify player ped coordinates `GetEntityCoords(GetPlayerPed(src))` are within `{max_distance}` meters of the action location.
+4. **Exploit Defense:** Log suspicious triggers or drop players with `DropPlayer(src, "Exploit attempt detected.")` if distance checks fail.
+"""
+
+
+@mcp.prompt()
+def scaffold_safe_transaction(
+    name: str = "economy-transaction",
+) -> str:
+    """Generate a race-condition immune, authoritative server transaction handler with player mutex locking."""
+    return f"""Please scaffold a thread-safe server economy transaction handler named `{name}`.
+
+### Requirements:
+1. Use an in-memory transaction lock table (`transactionLocks[src] = true`) to prevent concurrent duplicate payouts.
+2. Verify player wallet/inventory state authority on the server before mutating database or state bags.
+3. Use `pcall` or structured `finally` blocks to guarantee `transactionLocks[src] = nil` is always released on error.
+4. Log all successful and failed transactions with timestamp and rockstar license identifier.
 """
 
 
