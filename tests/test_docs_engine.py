@@ -1,4 +1,4 @@
-from fivem_mcp.docs import docs_manager
+﻿from fivem_mcp.docs import docs_manager
 from fivem_mcp.server import (
     search_docs,
     get_doc,
@@ -8,13 +8,15 @@ from fivem_mcp.server import (
     scaffold_csharp_resource,
     scaffold_player_connecting,
     scaffold_onesync_spawner,
+    scaffold_interaction_point,
+    scaffold_damage_tracker,
     get_fivem_doc_resource,
 )
 
 
-def test_docs_manager_all_22_topics():
+def test_docs_manager_all_30_topics():
     topics = docs_manager.list_topics()
-    assert len(topics) == 22, f"Expected 22 topics, found {len(topics)}"
+    assert len(topics) == 30, f"Expected 30 topics, found {len(topics)}"
     slugs = [t["topic"] for t in topics]
 
     expected_slugs = [
@@ -40,18 +42,29 @@ def test_docs_manager_all_22_topics():
         "events-catalog",
         "convars",
         "onesync-routing-buckets",
+        "game-references-controls",
+        "game-references-blips-markers",
+        "game-references-ui-hud",
+        "game-references-vehicles",
+        "game-references-weapons-peds",
+        "game-references-audio-speech",
+        "game-references-world-zones",
+        "game-references-game-events",
     ]
     for expected in expected_slugs:
         assert expected in slugs, f"Missing topic slug: {expected}"
 
 
-def test_search_docs_scripting_ref():
+def test_search_docs_game_references():
     test_cases = [
-        ("deferrals player connecting", "events-catalog"),
-        ("convar replicated server info", "convars"),
-        ("onesync server setter routing bucket", "onesync-routing-buckets"),
-        ("client key mapping command", "client-functions-ref"),
-        ("server ace allowed identifiers", "server-functions-ref"),
+        ("controls input context", "game-references-controls"),
+        ("blip sprites markers", "game-references-blips-markers"),
+        ("hud colors formatting", "game-references-ui-hud"),
+        ("vehicle models paint colors", "game-references-vehicles"),
+        ("weapon hashes ped models", "game-references-weapons-peds"),
+        ("radio stations ambient speech", "game-references-audio-speech"),
+        ("map zones data files", "game-references-world-zones"),
+        ("damage tracking entity event", "game-references-game-events"),
     ]
     for query, expected_slug in test_cases:
         results = search_docs(query)
@@ -70,34 +83,27 @@ def test_get_doc_all_topics():
 
 
 def test_mcp_resource_resolution():
-    res_events = get_fivem_doc_resource("events-catalog")
-    assert "playerConnecting" in res_events
-    assert "gameEventTriggered" in res_events
+    res_controls = get_fivem_doc_resource("game-references-controls")
+    assert "INPUT_CONTEXT" in res_controls
 
-    res_onesync = get_fivem_doc_resource("onesync-routing-buckets")
-    assert "CreateVehicleServerSetter" in res_onesync
-    assert "SetPlayerRoutingBucket" in res_onesync
+    res_blips = get_fivem_doc_resource("game-references-blips-markers")
+    assert "AddBlipForCoord" in res_blips
 
 
-def test_all_6_scaffolding_prompts():
-    p_gen = scaffold_resource(name="test-resource", description="General test")
-    assert "test-resource" in p_gen
+def test_all_8_scaffolding_prompts():
+    assert "fxmanifest.lua" in scaffold_resource(name="res")
+    assert "RegisterNUICallback" in scaffold_nui_resource(name="nui")
+    assert "CreateDui" in scaffold_dui_screen(name="tv")
+    assert "CitizenFX.Core" in scaffold_csharp_resource(name="cs")
+    assert "playerConnecting" in scaffold_player_connecting(name="auth")
+    assert "CreateVehicleServerSetter" in scaffold_onesync_spawner(name="sync")
+    
+    p_inter = scaffold_interaction_point(name="shop", marker_type=1, blip_sprite=52, key_bind="E")
+    assert "shop" in p_inter
+    assert "DrawMarker" in p_inter
+    assert "AddBlipForCoord" in p_inter
 
-    p_nui = scaffold_nui_resource(name="test-nui", description="NUI test", framework="react")
-    assert "test-nui" in p_nui
-
-    p_dui = scaffold_dui_screen(name="test-tv", url="https://example.com", target_model="prop_tv_flat_01")
-    assert "test-tv" in p_dui
-
-    p_cs = scaffold_csharp_resource(name="TestCSharp", description="C# Test")
-    assert "TestCSharp" in p_cs
-
-    p_conn = scaffold_player_connecting(name="custom-auth")
-    assert "custom-auth" in p_conn
-    assert "playerConnecting" in p_conn
-    assert "deferrals.defer()" in p_conn
-
-    p_sync = scaffold_onesync_spawner(name="car-spawner", entity_type="automobile")
-    assert "car-spawner" in p_sync
-    assert "CreateVehicleServerSetter" in p_sync
-    assert "SetPlayerRoutingBucket" in p_sync
+    p_dmg = scaffold_damage_tracker(name="combat-log")
+    assert "combat-log" in p_dmg
+    assert "CEventNetworkEntityDamage" in p_dmg
+    assert "gameEventTriggered" in p_dmg

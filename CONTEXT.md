@@ -1,6 +1,6 @@
 ﻿# FiveM Native API & Developer Documentation Context
 
-Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, Scripting Reference catalogs, and MCP resources for script development.
+Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, Scripting Reference catalogs, Game Reference constant tables, and MCP resources for script development.
 
 ## Language
 
@@ -59,6 +59,30 @@ _Avoid_: Account ID, user identifier, player GUID
 **GameEvent**:
 A low-level C++ game engine event (e.g. `CEventNetworkEntityDamage`) caught via `gameEventTriggered`.
 _Avoid_: Engine event, damage signal
+
+**Blip**:
+A 2D radar / minimap waypoint icon and label rendered in the GTA V HUD.
+_Avoid_: Map icon, radar pin, minimap marker
+
+**Marker**:
+A 3D geometric shape (cylinder, chevron, ring) drawn in the game world with `DrawMarker`.
+_Avoid_: 3D ring, checkpoint circle, ground light
+
+**ControlAction**:
+A numerical input index (0-357) mapping to keyboard, mouse, or controller buttons.
+_Avoid_: Key code, button ID, input number
+
+**HUDColor**:
+A standard GTA V HUD palette color index (e.g. `HUD_COLOUR_RED`) or embedded color token (`~r~`).
+_Avoid_: Text color, UI tint
+
+**GamerTag**:
+An overhead player name tag and health indicator managed via `CreateMpGamerTag`.
+_Avoid_: Nameplate, overhead text
+
+**Zone**:
+A named GTA V geographical region identified by a 3-letter uppercase code (e.g. `AIRP`, `DOWNT`).
+_Avoid_: Map region, neighborhood code
 
 **NUI**:
 Native User Interface; an embedded Chromium web view rendering HTML/CSS/JS inside the game client.

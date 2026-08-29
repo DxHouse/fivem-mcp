@@ -52,10 +52,10 @@ def get_native_detail(name_or_hash: str) -> dict[str, Any] | str:
 @mcp.tool()
 def search_docs(query: str, limit: int = 5) -> list[dict[str, Any]]:
     """
-    Search FiveM developer guides and architectural documentation.
+    Search FiveM developer guides, game reference constants, and architectural documentation.
 
     Args:
-        query: Keywords to search for (e.g. 'fxmanifest', 'state bags', 'events', 'csharp', 'profiler', 'onesync', 'convars', 'deferrals').
+        query: Keywords to search for (e.g. 'controls', 'blip markers', 'hud colors', 'vehicles', 'weapons', 'game events', 'zones', 'convars').
         limit: Maximum number of matching topics to return (default: 5).
     """
     return docs_manager.search(query, limit=limit)
@@ -67,7 +67,7 @@ def get_doc(topic: str) -> str:
     Retrieve the full Markdown developer guide for a specific FiveM topic.
 
     Args:
-        topic: Topic slug or name (e.g. 'fxmanifest', 'networking-events', 'events-catalog', 'convars', 'onesync-routing-buckets', 'client-functions-ref', 'server-functions-ref').
+        topic: Topic slug or name (e.g. 'game-references-controls', 'game-references-blips-markers', 'game-references-ui-hud', 'events-catalog').
     """
     content = docs_manager.get_doc(topic)
     if not content:
@@ -234,6 +234,41 @@ def scaffold_onesync_spawner(
 2. Wait for `DoesEntityExist(entity)` and retrieve synchronized `NetworkGetNetworkIdFromEntity(entity)`.
 3. Support virtual world isolation using `SetPlayerRoutingBucket(src, bucketId)` and `SetEntityRoutingBucket(entity, bucketId)`.
 4. Provide clean client-side event triggers to request and receive spawned network IDs.
+"""
+
+
+@mcp.prompt()
+def scaffold_interaction_point(
+    name: str = "custom-shop",
+    marker_type: int = 1,
+    blip_sprite: int = 52,
+    key_bind: str = "E",
+) -> str:
+    """Generate a high-performance in-game interaction point with dynamic sleep interval, Marker, Blip, and 3D prompt."""
+    return f"""Please scaffold an optimized client interaction point resource named `{name}`.
+
+### Requirements:
+1. **Minimap Blip:** Created with `AddBlipForCoord`, sprite `{blip_sprite}`, short range `true`.
+2. **Dynamic Sleep Loop:**
+   - When distance > 15.0m: Sleep for `1000` ms (0.00 ms CPU impact).
+   - When distance <= 15.0m: Sleep for `0` ms and render `DrawMarker({marker_type}, ...)`.
+   - When distance <= 2.0m: Display help text (~INPUT_CONTEXT~ to interact) and listen for `IsControlJustPressed(0, 38)`.
+3. Action execution handler when player presses [{key_bind}].
+"""
+
+
+@mcp.prompt()
+def scaffold_damage_tracker(
+    name: str = "damage-logger",
+) -> str:
+    """Generate an event-driven damage and kill tracking script using GTA V's native CEventNetworkEntityDamage."""
+    return f"""Please scaffold a client/server damage & combat logging resource named `{name}`.
+
+### Requirements:
+1. Client listens to `gameEventTriggered` for `CEventNetworkEntityDamage`.
+2. Extract victim (`args[1]`), attacker (`args[2]`), fatal flag (`args[6] == 1`), and weapon hash (`args[7]`).
+3. Check if victim is `PlayerPedId()`, resolve attacker player name if attacker is a player ped.
+4. Dispatch structured client-to-server event `TriggerServerEvent('combat:onPlayerDamage', ...)` with weapon hash mapping.
 """
 
 
