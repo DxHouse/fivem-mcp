@@ -25,15 +25,9 @@ def search_natives(
         query: Search term to match against function name, hash, or description.
         namespace: Optional namespace filter (e.g. 'PLAYER', 'VEHICLE', 'ENTITY', 'CFX').
         apiset: Filter by execution environment: 'all', 'client', or 'server'. Defaults to 'all'.
-        limit: Maximum number of results to return (default: 10, max: 50).
+        limit: Maximum number of results to return (default: 10).
     """
-    safe_limit = max(1, min(limit, 50))
-    return natives_manager.search(
-        query=query,
-        namespace=namespace,
-        apiset=apiset,
-        limit=safe_limit,
-    )
+    return natives_manager.search(query, namespace=namespace, apiset=apiset, limit=limit)
 
 
 @mcp.tool()
