@@ -34,13 +34,27 @@ def run_benchmark():
     avg_latency_ms = (total_time / iterations) * 1000
     avg_latency_us = avg_latency_ms * 1000
 
-    print("-" * 60)
-    print(f"500 Queries Benchmark:")
-    print(f"Total time: {total_time:.4f} s")
-    print(f"Average latency per query: {avg_latency_ms:.4f} ms ({avg_latency_us:.1f} us)")
+    # 3. Validator benchmark
+    sample_script = """
+    RegisterNetEvent('shop:purchase', function(item, amount)
+        local src = source
+        local coords = GetEntityCoords(GetPlayerPed(src))
+        if #(coords - vector3(0, 0, 0)) < 5.0 then
+            -- clean code
+        end
+    end)
+    """
+    from fivem_mcp.validator import script_validator
+    t0 = time.perf_counter()
+    for _ in range(500):
+        script_validator.validate(sample_script)
+    val_total = time.perf_counter() - t0
+    val_avg_ms = (val_total / 500) * 1000
+    print(f"500 Validator Scans Total: {val_total:.4f} s | Avg: {val_avg_ms:.4f} ms ({val_avg_ms * 1000:.1f} us)")
     print("-" * 60)
 
     assert avg_latency_ms < 0.15, f"Benchmark failed: average latency {avg_latency_ms:.4f} ms >= 0.15 ms target"
+    assert val_avg_ms < 1.0, f"Validator failed: average latency {val_avg_ms:.4f} ms >= 1.0 ms target"
     print("[PASS] All performance targets passed successfully!")
 
 

@@ -17,6 +17,7 @@ FastMCP Server Framework for FiveM built with `uv`.
 ## Available MCP Capabilities
 
 ### 🛠️ Tools
+- **`validate_script(code, environment)`**: Statically analyze and lint FiveM Lua scripts for security vulnerabilities (e.g. uncaptured `source`), performance anti-patterns (e.g. unthrottled `Wait(0)` loops), missing NUI `cb()` callbacks, and APISet execution mismatches.
 - **`search_natives(query, namespace, apiset, limit)`**: Search FiveM / GTA V natives by name, hash, or description. Supports filtering by namespace (e.g. `PLAYER`, `VEHICLE`) and apiset (`all`, `client`, `server`).
 - **`get_native_detail(name_or_hash)`**: Get full parameter types, return values, descriptions, and examples for a native.
 - **`search_docs(query, limit)`**: Search curated FiveM developer guides (e.g. `fxmanifest`, `events`, `statebags`, `nui`).

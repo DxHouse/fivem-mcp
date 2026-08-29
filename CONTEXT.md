@@ -1,4 +1,4 @@
-﻿# FiveM Native API & Developer Documentation Context
+# FiveM Native API & Developer Documentation Context
 
 Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, Scripting Reference catalogs, Game Reference constant tables, developer architecture docs, and MCP resources for script development.
 
@@ -147,3 +147,11 @@ _Avoid_: Backend, host, FXServer
 **Signature**:
 The formal declaration of a native including its name, ordered typed parameters, and return type.
 _Avoid_: Declaration, prototype, function definition
+
+**ScriptValidator**:
+A static analysis rule engine that audits FiveM Lua scripts for security leaks, performance bottlenecks, and native APISet mismatches.
+_Avoid_: Code checker, lua parser
+
+**StaticLinter**:
+The diagnostic linter component verifying NUI callbacks, source closures, and tight loop throttling.
+_Avoid_: Error scanner, code cleaner

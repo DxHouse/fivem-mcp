@@ -1,7 +1,8 @@
-﻿from typing import Any
+from typing import Any
 from fastmcp import FastMCP
 from fivem_mcp.natives import natives_manager
 from fivem_mcp.docs import docs_manager
+from fivem_mcp.validator import script_validator
 
 mcp = FastMCP("fivem-mcp")
 
@@ -74,6 +75,18 @@ def get_doc(topic: str) -> str:
         available = ", ".join(f"'{t['topic']}'" for t in docs_manager.list_topics())
         return f"Documentation topic '{topic}' not found. Available topics: {available}"
     return content
+
+
+@mcp.tool()
+def validate_script(code: str, environment: str = "auto") -> dict[str, Any]:
+    """
+    Statically analyze and lint FiveM Lua scripts for security vulnerabilities, performance anti-patterns, missing NUI callbacks, and native execution mismatches.
+
+    Args:
+        code: Lua source code to analyze.
+        environment: Execution environment: 'auto' (detect from code), 'client', or 'server'. Defaults to 'auto'.
+    """
+    return script_validator.validate(code, environment=environment)
 
 
 # ============================================================================
