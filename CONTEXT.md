@@ -1,6 +1,6 @@
-﻿# FiveM Native API Context
+﻿# FiveM Native API & Developer Documentation Context
 
-Provides access, indexing, search, and detailed inspection of FiveM and GTA V native functions for script development.
+Provides access, indexing, search, detailed inspection of FiveM and GTA V native functions, curated developer guides, and MCP resources for script development.
 
 ## Language
 
@@ -19,6 +19,26 @@ _Avoid_: Category, module, package
 **APISet**:
 The execution environment where a native is valid to run (`client`, `server`, or `shared`).
 _Avoid_: Environment, side, runtime context
+
+**Resource**:
+A packaged FiveM module containing scripts, configuration, and assets managed by FXServer.
+_Avoid_: Plugin, mod, addon, package
+
+**Manifest**:
+The `fxmanifest.lua` configuration file declaring resource metadata, script entry points, and asset dependencies.
+_Avoid_: Config file, package.json, meta file
+
+**StateBag**:
+A synchronized, key-value state store attached to entities, players, or global server state.
+_Avoid_: Sync table, shared variable, entity metadata
+
+**NUI**:
+Native User Interface; an embedded Chromium web view rendering HTML/CSS/JS inside the game client.
+_Avoid_: Webview, CEF, HTML UI
+
+**Event**:
+An asynchronous message dispatched between client and server runtimes or within the same runtime.
+_Avoid_: Signal, RPC, message packet
 
 **Client**:
 The FiveM game instance running on the player machine executing client-side scripts.

@@ -14,11 +14,20 @@ FastMCP Server Framework for FiveM built with `uv`.
    uv sync
    ```
 
-## Available MCP Tools
+## Available MCP Capabilities
 
+### 🛠️ Tools
 - **`search_natives(query, namespace, apiset, limit)`**: Search FiveM / GTA V natives by name, hash, or description. Supports filtering by namespace (e.g. `PLAYER`, `VEHICLE`) and apiset (`all`, `client`, `server`).
 - **`get_native_detail(name_or_hash)`**: Get full parameter types, return values, descriptions, and examples for a native.
+- **`search_docs(query, limit)`**: Search curated FiveM developer guides (e.g. `fxmanifest`, `events`, `statebags`, `nui`).
+- **`get_doc(topic)`**: Retrieve complete Markdown developer guide for a topic.
 - **`ping(message)`**: Health check test tool.
+
+### 📖 Resources
+- **`docs://fivem/{topic}`**: Direct access to Markdown developer documentation (e.g. `docs://fivem/fxmanifest`, `docs://fivem/state-bags`).
+
+### 💡 Prompts
+- **`scaffold_resource(name, description, has_client, has_server, has_ui)`**: Generates complete boilerplate instructions and modern `fxmanifest.lua` configuration for a new FiveM resource.
 
 ## Data Storage
 
