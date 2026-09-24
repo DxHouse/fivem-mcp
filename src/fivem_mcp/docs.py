@@ -1,9 +1,11 @@
-﻿import re
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "docs"
+_PKG_DOCS_DIR = Path(__file__).resolve().parent / "data" / "docs"
+_REPO_DOCS_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "docs"
+DOCS_DIR = _PKG_DOCS_DIR if _PKG_DOCS_DIR.exists() else _REPO_DOCS_DIR
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 _HEADER_RE = re.compile(r"^#\s+(.+)$", re.MULTILINE)

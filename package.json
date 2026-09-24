@@ -1,6 +1,6 @@
 {
   "name": "@dxhouse/fivem-mcp",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "FastMCP Server Framework for FiveM",
   "bin": {
     "fivem-mcp": "bin/cli.js"

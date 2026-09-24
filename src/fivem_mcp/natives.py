@@ -8,7 +8,9 @@ from typing import Any
 import urllib.request
 
 NATIVES_URL = "https://runtime.fivem.net/doc/natives.json"
-DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "natives.json"
+_PKG_DATA_FILE = Path(__file__).resolve().parent / "data" / "natives.json"
+_REPO_DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "natives.json"
+DATA_FILE = _PKG_DATA_FILE if _PKG_DATA_FILE.exists() else _REPO_DATA_FILE
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _CAMEL_RE = re.compile(r"([a-z])([A-Z])")
