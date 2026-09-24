@@ -63,7 +63,43 @@ uv run fastmcp inspect src/fivem_mcp/server.py
 
 ## Client Configuration (Claude Desktop / Cursor)
 
-Add to your MCP configuration file (e.g. `claude_desktop_config.json` or `.cursor/mcp.json`):
+### Option 1: Via NPX (Recommended)
+
+No local clone required. Add to your MCP configuration (`claude_desktop_config.json` or `.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "fivem-mcp": {
+      "command": "npx",
+      "args": ["-y", "@dxhouse/fivem-mcp"]
+    }
+  }
+}
+```
+
+> **Note:** Requires [`uv`](https://docs.astral.sh/uv/) installed on the host machine.
+> - Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+> - macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+### Option 2: Via UVX
+
+```json
+{
+  "mcpServers": {
+    "fivem-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/DxHouse/fivem-mcp",
+        "fivem-mcp"
+      ]
+    }
+  }
+}
+```
+
+### Option 3: Local Clone
 
 ```json
 {

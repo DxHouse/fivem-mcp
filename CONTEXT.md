@@ -155,3 +155,12 @@ _Avoid_: Code checker, lua parser
 **StaticLinter**:
 The diagnostic linter component verifying NUI callbacks, source closures, and tight loop throttling.
 _Avoid_: Error scanner, code cleaner
+
+**NodeWrapper**:
+A lightweight npm executable package (@dxhouse/fivem-mcp) enabling one-command execution via npx.
+_Avoid_: Node bridge, JS server, npm adapter
+
+**UvxRunner**:
+The ephemeral tool launcher executing fivem-mcp directly from Git or PyPI in an isolated Python environment.
+_Avoid_: Python runner, package exec, pipx tool
+
