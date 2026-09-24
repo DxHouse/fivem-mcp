@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, TypedDict
 
 _SERVER_INDICATORS = {
     "registerserverevent", "triggerclientevent", "triggerlatentclientevent",
@@ -37,6 +37,15 @@ _KNOWN_CLIENT_ONLY_NATIVES = {
 }
 
 
+class Issue(TypedDict):
+    """Structured diagnostic issue dictionary."""
+    code: str
+    severity: str
+    line: int
+    message: str
+    recommendation: str
+
+
 @dataclass(slots=True)
 class ScriptContext:
     """Pre-parsed Lua script representation passed to rule predicates."""
@@ -45,23 +54,35 @@ class ScriptContext:
     lines: list[tuple[int, str, str]]  # (line_no, raw_line, lower_stripped_line)
 
 
+@dataclass(slots=True)
+class Rule:
+    """Diagnostic rule with metadata, target execution environments, and check predicate."""
+    code: str
+    severity: str
+    environments: set[str]  # e.g. {"client"}, {"server"}, or {"client", "server"}
+    check: Callable[[ScriptContext], list[Issue]]
+
+
 def detect_environment(code: str) -> str:
     """Infer execution environment (client, server, or shared) based on heuristics."""
     code_lower = code.lower()
     server_hits = sum(1 for kw in _SERVER_INDICATORS if kw in code_lower)
     client_hits = sum(1 for kw in _CLIENT_INDICATORS if kw in code_lower)
-    return "server" if server_hits > client_hits else "client"
+    return "server" if server_hits > 0 and server_hits >= client_hits else "client"
+
+
+def _is_block_end(line_lower: str) -> bool:
+    """Check if line is a Lua block completion statement."""
+    return line_lower == "end" or line_lower.startswith("end)")
 
 
 # ============================================================================
 # Individual Rule Predicates (Internal Seam)
 # ============================================================================
 
-def check_sec003_forbidden_client_os(ctx: ScriptContext) -> list[dict[str, Any]]:
+def check_sec003_forbidden_client_os(ctx: ScriptContext) -> list[Issue]:
     """SEC003: Detect forbidden operating system and file IO calls in client scripts."""
-    if ctx.environment not in ("client", "auto"):
-        return []
-    issues = []
+    issues: list[Issue] = []
     for line_no, _, line_lower in ctx.lines:
         for forbidden, reason in _FORBIDDEN_CLIENT_FUNCS.items():
             if forbidden in line_lower:
@@ -75,11 +96,9 @@ def check_sec003_forbidden_client_os(ctx: ScriptContext) -> list[dict[str, Any]]
     return issues
 
 
-def check_sec001_missing_source_capture(ctx: ScriptContext) -> list[dict[str, Any]]:
+def check_sec001_missing_source_capture(ctx: ScriptContext) -> list[Issue]:
     """SEC001: Detect uncaptured global 'source' across server event handlers."""
-    if ctx.environment not in ("server", "auto"):
-        return []
-    issues = []
+    issues: list[Issue] = []
     in_event = False
     event_line = 0
     has_src = False
@@ -98,7 +117,7 @@ def check_sec001_missing_source_capture(ctx: ScriptContext) -> list[dict[str, An
             elif re.search(r"\bsource\b", raw_line):
                 used_source = True
 
-            if line_lower == "end" or line_lower.startswith("end)"):
+            if _is_block_end(line_lower):
                 if not has_src and used_source:
                     issues.append({
                         "code": "SEC001",
@@ -112,9 +131,9 @@ def check_sec001_missing_source_capture(ctx: ScriptContext) -> list[dict[str, An
     return issues
 
 
-def check_perf002_legacy_player_ped(ctx: ScriptContext) -> list[dict[str, Any]]:
+def check_perf002_legacy_player_ped(ctx: ScriptContext) -> list[Issue]:
     """PERF002: Detect calls to legacy GetPlayerPed(-1)."""
-    issues = []
+    issues: list[Issue] = []
     for line_no, _, line_lower in ctx.lines:
         if "getplayerped(-1)" in line_lower:
             issues.append({
@@ -127,9 +146,9 @@ def check_perf002_legacy_player_ped(ctx: ScriptContext) -> list[dict[str, Any]]:
     return issues
 
 
-def check_perf003_legacy_distance(ctx: ScriptContext) -> list[dict[str, Any]]:
+def check_perf003_legacy_distance(ctx: ScriptContext) -> list[Issue]:
     """PERF003: Detect legacy GetDistanceBetweenCoords calls."""
-    issues = []
+    issues: list[Issue] = []
     for line_no, _, line_lower in ctx.lines:
         if "getdistancebetweencoords(" in line_lower:
             issues.append({
@@ -142,9 +161,9 @@ def check_perf003_legacy_distance(ctx: ScriptContext) -> list[dict[str, Any]]:
     return issues
 
 
-def check_perf001_tight_wait_loop(ctx: ScriptContext) -> list[dict[str, Any]]:
+def check_perf001_tight_wait_loop(ctx: ScriptContext) -> list[Issue]:
     """PERF001: Detect tight while true do Wait(0) loops lacking distance or sleep logic."""
-    issues = []
+    issues: list[Issue] = []
     in_loop = False
     loop_line = 0
     has_wait_zero = False
@@ -163,7 +182,7 @@ def check_perf001_tight_wait_loop(ctx: ScriptContext) -> list[dict[str, Any]]:
             if "distance" in line_lower or "#(" in line_lower or "sleep" in line_lower:
                 has_distance = True
 
-            if line_lower == "end" or line_lower.startswith("end)"):
+            if _is_block_end(line_lower):
                 if has_wait_zero and not has_distance:
                     issues.append({
                         "code": "PERF001",
@@ -177,9 +196,9 @@ def check_perf001_tight_wait_loop(ctx: ScriptContext) -> list[dict[str, Any]]:
     return issues
 
 
-def check_bug001_missing_nui_cb(ctx: ScriptContext) -> list[dict[str, Any]]:
+def check_bug001_missing_nui_cb(ctx: ScriptContext) -> list[Issue]:
     """BUG001: Detect missing cb() callback invocation in RegisterNUICallback."""
-    issues = []
+    issues: list[Issue] = []
     in_nui = False
     nui_line = 0
     has_cb = False
@@ -194,7 +213,7 @@ def check_bug001_missing_nui_cb(ctx: ScriptContext) -> list[dict[str, Any]]:
             if re.search(r"\bcb\s*\(", raw_line):
                 has_cb = True
 
-            if line_lower == "end" or line_lower.startswith("end)"):
+            if _is_block_end(line_lower):
                 if not has_cb:
                     issues.append({
                         "code": "BUG001",
@@ -208,42 +227,70 @@ def check_bug001_missing_nui_cb(ctx: ScriptContext) -> list[dict[str, Any]]:
     return issues
 
 
-def check_bug003_apiset_mismatch(ctx: ScriptContext) -> list[dict[str, Any]]:
+def check_bug003_apiset_mismatch(ctx: ScriptContext) -> list[Issue]:
     """BUG003: Detect client-only natives in server code or server-only natives in client code."""
-    issues = []
-    if ctx.environment == "client":
-        for line_no, _, line_lower in ctx.lines:
-            for s_native in _KNOWN_SERVER_ONLY_NATIVES:
-                if re.search(rf"\b{s_native}\b", line_lower):
-                    issues.append({
-                        "code": "BUG003",
-                        "severity": "error",
-                        "line": line_no,
-                        "message": f"Server-only native '{s_native}' called in client script.",
-                        "recommendation": "Move this call to a server script or invoke via TriggerServerEvent.",
-                    })
-    elif ctx.environment == "server":
-        for line_no, _, line_lower in ctx.lines:
-            for c_native in _KNOWN_CLIENT_ONLY_NATIVES:
-                if re.search(rf"\b{c_native}\b", line_lower):
-                    issues.append({
-                        "code": "BUG003",
-                        "severity": "error",
-                        "line": line_no,
-                        "message": f"Client-only native '{c_native}' called in server script.",
-                        "recommendation": "Move this call to a client script or invoke via TriggerClientEvent.",
-                    })
+    targets = _KNOWN_SERVER_ONLY_NATIVES if ctx.environment == "client" else _KNOWN_CLIENT_ONLY_NATIVES
+    env_type = "Server-only" if ctx.environment == "client" else "Client-only"
+    target_env = "server" if ctx.environment == "client" else "client"
+    event_trigger = "TriggerServerEvent" if ctx.environment == "client" else "TriggerClientEvent"
+
+    issues: list[Issue] = []
+    for line_no, _, line_lower in ctx.lines:
+        for native in targets:
+            if re.search(rf"\b{native}\b", line_lower):
+                issues.append({
+                    "code": "BUG003",
+                    "severity": "error",
+                    "line": line_no,
+                    "message": f"{env_type} native '{native}' called in {ctx.environment} script.",
+                    "recommendation": f"Move this call to a {target_env} script or invoke via {event_trigger}.",
+                })
     return issues
 
 
-DEFAULT_RULES: list[Callable[[ScriptContext], list[dict[str, Any]]]] = [
-    check_sec003_forbidden_client_os,
-    check_sec001_missing_source_capture,
-    check_perf002_legacy_player_ped,
-    check_perf003_legacy_distance,
-    check_perf001_tight_wait_loop,
-    check_bug001_missing_nui_cb,
-    check_bug003_apiset_mismatch,
+DEFAULT_RULES: list[Rule] = [
+    Rule(
+        code="SEC003",
+        severity="error",
+        environments={"client"},
+        check=check_sec003_forbidden_client_os,
+    ),
+    Rule(
+        code="SEC001",
+        severity="warning",
+        environments={"server"},
+        check=check_sec001_missing_source_capture,
+    ),
+    Rule(
+        code="PERF002",
+        severity="warning",
+        environments={"client", "server"},
+        check=check_perf002_legacy_player_ped,
+    ),
+    Rule(
+        code="PERF003",
+        severity="info",
+        environments={"client", "server"},
+        check=check_perf003_legacy_distance,
+    ),
+    Rule(
+        code="PERF001",
+        severity="warning",
+        environments={"client", "server"},
+        check=check_perf001_tight_wait_loop,
+    ),
+    Rule(
+        code="BUG001",
+        severity="error",
+        environments={"client"},
+        check=check_bug001_missing_nui_cb,
+    ),
+    Rule(
+        code="BUG003",
+        severity="error",
+        environments={"client", "server"},
+        check=check_bug003_apiset_mismatch,
+    ),
 ]
 
 
@@ -254,7 +301,7 @@ DEFAULT_RULES: list[Callable[[ScriptContext], list[dict[str, Any]]]] = [
 def validate(
     code: str,
     environment: str = "auto",
-    rules: list[Callable[[ScriptContext], list[dict[str, Any]]]] | None = None,
+    rules: list[Rule | Callable[[ScriptContext], list[Issue]]] | None = None,
 ) -> dict[str, Any]:
     """Perform static analysis on a FiveM Lua script and return structured diagnostics."""
     env = detect_environment(code) if environment == "auto" else environment.lower()
@@ -268,9 +315,14 @@ def validate(
     ]
     ctx = ScriptContext(code=code, environment=env, lines=parsed_lines)
 
-    issues: list[dict[str, Any]] = []
-    for rule_fn in active_rules:
-        issues.extend(rule_fn(ctx))
+    issues: list[Issue] = []
+    # Orchestrator filters rules by target environment
+    for rule in active_rules:
+        if isinstance(rule, Rule):
+            if env in rule.environments or "all" in rule.environments:
+                issues.extend(rule.check(ctx))
+        elif callable(rule):
+            issues.extend(rule(ctx))
 
     issues.sort(key=lambda x: x["line"])
 
@@ -306,7 +358,7 @@ class ScriptValidator:
     def validate(
         code: str,
         environment: str = "auto",
-        rules: list[Callable[[ScriptContext], list[dict[str, Any]]]] | None = None,
+        rules: list[Rule | Callable[[ScriptContext], list[Issue]]] | None = None,
     ) -> dict[str, Any]:
         return validate(code, environment=environment, rules=rules)
 

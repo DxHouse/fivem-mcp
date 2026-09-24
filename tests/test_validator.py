@@ -128,3 +128,47 @@ def test_rule_isolation_unit_test():
     assert len(issues) == 1
     assert issues[0]["code"] == "SEC003"
 
+
+def test_rule_dataclass_environment_filtering():
+    from fivem_mcp.validator import validate, Rule, ScriptContext
+
+    def server_check(ctx: ScriptContext):
+        return [{
+            "code": "SRV001",
+            "severity": "error",
+            "line": 1,
+            "message": "Server rule triggered",
+            "recommendation": "Fix server issue",
+        }]
+
+    rule = Rule(
+        code="SRV001",
+        severity="error",
+        environments={"server"},
+        check=server_check,
+    )
+
+    # In client environment, server rule should be skipped by orchestrator
+    client_res = validate("print('hello')", environment="client", rules=[rule])
+    assert len(client_res["issues"]) == 0
+
+    # In server environment, server rule should execute
+    server_res = validate("print('hello')", environment="server", rules=[rule])
+    assert len(server_res["issues"]) == 1
+    assert server_res["issues"][0]["code"] == "SRV001"
+
+
+def test_detect_environment_tie_break():
+    from fivem_mcp.validator import detect_environment
+
+    # Both client indicator (playerpedid) and server indicator (getplayers)
+    code = "local ped = PlayerPedId() local players = GetPlayers()"
+    assert detect_environment(code) == "server"
+
+    # Only client
+    assert detect_environment("local ped = PlayerPedId()") == "client"
+
+    # No indicators default to client
+    assert detect_environment("print('neutral')") == "client"
+
+
