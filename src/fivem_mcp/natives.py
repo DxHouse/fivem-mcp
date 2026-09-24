@@ -26,7 +26,6 @@ class NativesManager:
 
     def __init__(self):
         self._all_records: list[dict[str, Any]] = []
-        self._formatted_summaries: list[dict[str, Any]] = []
         self._by_name: dict[str, int] = {}
         self._by_hash: dict[str, int] = {}
         self._name_token_index: dict[str, set[int]] = defaultdict(set)
@@ -65,23 +64,6 @@ class NativesManager:
                     "name": name_val,
                     "ns": ns_upper,
                     "apiset": apiset_val,
-                })
-
-                params_str = ", ".join(
-                    f"{p.get('name', 'arg')}: {p.get('type', 'Any')}"
-                    for p in item.get("params", [])
-                )
-                summary_line = desc_val.strip().split("\n")[0] if desc_val else ""
-                if len(summary_line) > 120:
-                    summary_line = summary_line[:117] + "..."
-
-                self._formatted_summaries.append({
-                    "name": name_val,
-                    "hash": hash_val,
-                    "namespace": ns_upper,
-                    "apiset": apiset_val,
-                    "signature": f"{name_val}({params_str}) -> {item.get('results', 'void')}",
-                    "summary": summary_line,
                 })
 
                 # Normalized mappings
@@ -203,6 +185,26 @@ class NativesManager:
         scored.sort(key=lambda x: x[0], reverse=True)
         return tuple(c_idx for _, c_idx in scored[:limit])
 
+    def _format_summary(self, idx: int) -> dict[str, Any]:
+        item = self._all_records[idx]
+        params_str = ", ".join(
+            f"{p.get('name', 'arg')}: {p.get('type', 'Any')}"
+            for p in item.get("params", [])
+        )
+        desc = item.get("description", "")
+        summary_line = desc.strip().split("\n")[0] if desc else ""
+        if len(summary_line) > 120:
+            summary_line = summary_line[:117] + "..."
+        name_val = item["name"]
+        return {
+            "name": name_val,
+            "hash": item["hash"],
+            "namespace": item["ns"],
+            "apiset": item["apiset"],
+            "signature": f"{name_val}({params_str}) -> {item.get('results', 'void')}",
+            "summary": summary_line,
+        }
+
     def search(
         self,
         query: str,
@@ -212,7 +214,7 @@ class NativesManager:
     ) -> list[dict[str, Any]]:
         """Search natives with ultra-fast inverted index and multi-word token scoring."""
         indices = self._search_indices(query, namespace, apiset, limit)
-        return [self._formatted_summaries[idx] for idx in indices]
+        return [self._format_summary(idx) for idx in indices]
 
     def get_detail(self, name_or_hash: str) -> dict[str, Any] | None:
         """Get full documentation and details for a native via O(1) dictionary lookup."""

@@ -1,4 +1,4 @@
-﻿import re
+import re
 from typing import Any
 from fivem_mcp.natives import natives_manager
 
@@ -37,26 +37,22 @@ _KNOWN_CLIENT_ONLY_NATIVES = {
 }
 
 
+def detect_environment(code: str) -> str:
+    """Infer execution environment (client, server, or shared) based on heuristics."""
+    code_lower = code.lower()
+    server_hits = sum(1 for kw in _SERVER_INDICATORS if kw in code_lower)
+    client_hits = sum(1 for kw in _CLIENT_INDICATORS if kw in code_lower)
+    return "server" if server_hits > client_hits else "client"
+
+
 class ScriptValidator:
     """Static analysis and linter engine for FiveM Lua scripts."""
 
-    def detect_environment(self, code: str) -> str:
-        """Infer execution environment (client, server, or shared) based on heuristics."""
-        code_lower = code.lower()
-        server_hits = sum(1 for kw in _SERVER_INDICATORS if kw in code_lower)
-        client_hits = sum(1 for kw in _CLIENT_INDICATORS if kw in code_lower)
-
-        if server_hits > 0 and client_hits == 0:
-            return "server"
-        if client_hits > 0 and server_hits == 0:
-            return "client"
-        if server_hits > 0 and client_hits > 0:
-            return "server" if server_hits >= client_hits else "client"
-        return "client"
+    detect_environment = staticmethod(detect_environment)
 
     def validate(self, code: str, environment: str = "auto") -> dict[str, Any]:
         """Perform static analysis on a FiveM Lua script and return structured diagnostics."""
-        env = self.detect_environment(code) if environment == "auto" else environment.lower()
+        env = detect_environment(code) if environment == "auto" else environment.lower()
         issues: list[dict[str, Any]] = []
         lines = code.splitlines()
 
