@@ -1,4 +1,4 @@
-﻿from fivem_mcp.validator import script_validator
+from fivem_mcp.validator import script_validator
 from fivem_mcp.server import validate_script
 
 
@@ -96,3 +96,35 @@ def test_clean_production_script_passes():
     res = validate_script(good_code, environment="server")
     assert res["valid"] is True
     assert len(res["issues"]) == 0
+
+
+def test_rule_engine_internal_seam_custom_rule():
+    from fivem_mcp.validator import validate, ScriptContext
+
+    def custom_rule(ctx: ScriptContext):
+        return [{
+            "code": "CUSTOM001",
+            "severity": "warning",
+            "line": 1,
+            "message": "Custom rule triggered",
+            "recommendation": "Follow custom guide",
+        }]
+
+    res = validate("print('hello')", rules=[custom_rule])
+    assert res["valid"] is True
+    assert len(res["issues"]) == 1
+    assert res["issues"][0]["code"] == "CUSTOM001"
+
+
+def test_rule_isolation_unit_test():
+    from fivem_mcp.validator import check_sec003_forbidden_client_os, ScriptContext
+
+    ctx = ScriptContext(
+        code="os.execute('test')",
+        environment="client",
+        lines=[(1, "os.execute('test')", "os.execute('test')")],
+    )
+    issues = check_sec003_forbidden_client_os(ctx)
+    assert len(issues) == 1
+    assert issues[0]["code"] == "SEC003"
+
